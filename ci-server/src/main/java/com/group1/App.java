@@ -30,9 +30,6 @@ public class App extends AbstractHandler {
         response.getWriter().println("CI job done");
     }
 
-    // public static void main(String[] args) {
-    // System.out.println("Hello, World");
-    // }
     // used to start the CI server in command line
     public static void main(String[] args) throws Exception {
         Server server = new Server(8080);
