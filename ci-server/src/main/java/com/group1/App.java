@@ -20,7 +20,7 @@ public class App extends AbstractHandler {
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
 
-        System.out.println(target)
+        System.out.println(target);
 
         // here you do all the continuous integration tasks
         // for example
