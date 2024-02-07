@@ -1,5 +1,24 @@
 # assignment-2
 
+## Prerequisites
+* Java version 11 or higher 
+* Maven
+
+## How To Build
+```
+mvn package
+```
+
+## How to Run and Test Build
+```
+mvn exec:java -D exec.mainClass=com.group1.App
+```
+
+## How Run Server
+```
+TODO: add description
+```
+
 ## Commit Structure for assignment-2 
 
 Each commit message should consist of a subject and a body. Please follow this message structure when committing to the project:
