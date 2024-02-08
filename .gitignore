@@ -45,3 +45,5 @@ buildNumber.properties
 .vscode/
 .idea/
 .cache/
+
+ngrok*
