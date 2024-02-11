@@ -64,7 +64,7 @@ public class App extends AbstractHandler {
             Request baseRequest,
             HttpServletRequest request,
             HttpServletResponse response)
-            throws IOException, ServletException, Exception {
+            throws IOException, ServletException {
         
         // Parse the JSON file in the request body
         StringBuilder body = readRequest(baseRequest);
@@ -127,6 +127,9 @@ public class App extends AbstractHandler {
         catch (InterruptedException e) {
             createCommitStatus(repositoryName, commitSHA, "error", token);
             System.err.println("[ABORT] repository compile INTERRUPTED.");
+            e.printStackTrace();
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
         finally {
@@ -228,8 +231,7 @@ public class App extends AbstractHandler {
         return output;
     }
 
-    public static void createCommitStatus(String repoName, String commitSHA, String state, String token) 
-        throws MalformedURLException, IOException, Exception {
+    public static void createCommitStatus(String repoName, String commitSHA, String state, String token) {
         
         try {
             // define URL to GitHub API
@@ -272,6 +274,9 @@ public class App extends AbstractHandler {
             e.printStackTrace();
         } catch (IOException e) {
             System.err.println("[ERROR] Failed to open connection to GitHub API.");
+            e.printStackTrace();
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
