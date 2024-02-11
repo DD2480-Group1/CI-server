@@ -25,7 +25,7 @@ public class App extends AbstractHandler {
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
 
-        System.out.println(target)
+        System.out.println(target);
 
         // Handle POST requests from GitHub
         if (target.equals("/") && baseRequest.getMethod().equals("POST")) {
