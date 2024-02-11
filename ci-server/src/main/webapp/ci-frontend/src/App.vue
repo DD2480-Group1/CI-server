@@ -16,16 +16,27 @@
           <v-select
             :items="repositories"
             label="Repo"
+            v-model="selectedRepo"
             @click="getRepo"
           ></v-select>
-          <v-select :items="branches" label="Branch"></v-select>
-          <v-select :items="commits" label="Commit"></v-select>
+          <v-select
+            :items="branches"
+            label="Branch"
+            v-model="selectedBranch"
+            @click="getBranch"
+          ></v-select>
+          <v-select
+            :items="commits"
+            label="Commit"
+            v-model="selectedCommit"
+            @click="getCommit"
+          ></v-select>
         </div>
       </v-col>
     </v-row>
   </v-container>
 
-  <div>
+  <!-- <div>
     <v-container>
       <v-row>
         <div class="d-flex flex-wrap ga-3">
@@ -34,7 +45,7 @@
         </div>
       </v-row>
     </v-container>
-  </div>
+  </div> -->
 
   <v-container>
     <v-row>
@@ -87,12 +98,15 @@ export default {
     commits: [
       // "commit1",
     ],
+    selectedCommit: "",
     branches: [
       //  "bugfix",
     ],
+    selectedBranch: "",
     repositories: [
       // "repo1",
     ],
+    selectedRepo: "",
     isReadOnly: true,
     log: "",
     compilePassed: 0, // 0: not tested, 1: passed, 2: failed
@@ -117,9 +131,46 @@ export default {
       // this.post = await axios.get(
       // "https://formally-quick-krill.ngrok-free.app/ci/api/repo"
       // );
+      console.log("http://localhost:8080/ci/api/repo");
       this.post = await axios.get("http://localhost:8080/ci/api/repo");
       this.repositories = this.post.data.repos;
-      console.log(this.repositories);
+    },
+
+    async getBranch() {
+      // this.post = await axios.get(
+      // "https://formally-quick-krill.ngrok-free.app/ci/api/build/?repo=" +
+      // this.repositories[0]
+      // );
+      console.log(
+        "http://localhost:8080/ci/api/branch/?repo=" + this.selectedRepo
+      );
+      this.post = await axios.get(
+        "http://localhost:8080/ci/api/branch/?repo=" + this.selectedRepo
+      );
+      this.branches = this.post.data.branches;
+    },
+
+    async getCommit() {
+      // this.post = await axios.get(
+      // "https://formally-quick-krill.ngrok-free.app/ci/api/build/?repo=" +
+      // this.repositories[0] +
+      // "&branch=" +
+      // this.branches[0]
+      // );
+      console.log(
+        "http://localhost:8080/ci/api/commit/?repo=" +
+          this.selectedRepo +
+          "&branch=" +
+          this.selectedBranch
+      );
+      this.post = await axios.get(
+        "http://localhost:8080/ci/api/commit/?repo=" +
+          this.selectedRepo +
+          "&branch=" +
+          this.selectedBranch
+      );
+      this.commits = this.post.data.name;
+      console.log(this.commits);
     },
   },
 };
