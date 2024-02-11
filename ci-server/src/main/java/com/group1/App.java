@@ -1,33 +1,27 @@
 package com.group1;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
-
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-//import java.util.List;
 import java.nio.file.Paths;
 
-import org.eclipse.jetty.server.Server;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+// Jetty Server
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 // GIT
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.api.errors.GitAPIException;
-
-//import org.eclipse.jgit.api.ListBranchCommand.ListMode;
-//import org.eclipse.jgit.lib.Ref;
-//import org.eclipse.jgit.revwalk.RevCommit;
-
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 // JSON
 import org.json.simple.JSONObject;
-import org.json.simple.parser.*;
+import org.json.simple.parser.JSONParser;
 
 public class App extends AbstractHandler {
     private static int PORT = 8080;
@@ -40,7 +34,35 @@ public class App extends AbstractHandler {
             throws IOException, ServletException {
 
         System.out.println(target);
-        // handle request
+        
+        // Handle POST requests from GitHub
+        if (target.equals("/") && baseRequest.getMethod().equals("POST")) {
+            handleWebhook(target, baseRequest, request, response);
+        }
+        // TODO: add handling for other cases
+
+        response.setContentType("text/html;charset=utf-8");
+        response.setStatus(HttpServletResponse.SC_OK);
+        baseRequest.setHandled(true);
+
+        try {
+            response.getWriter().println("CI job done");
+        } catch (IOException e) {
+            System.err.println("Server Response FAILED.");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Handles the webhook request from Github
+     */
+    public void handleWebhook(String target,
+            Request baseRequest,
+            HttpServletRequest request,
+            HttpServletResponse response)
+            throws IOException, ServletException {
+        
+        // Parse the JSON file in the request body
         StringBuilder body = readRequest(baseRequest);
         // check if the body of the request is not zero
         // otherwise, request should not be handled
@@ -48,13 +70,17 @@ public class App extends AbstractHandler {
             System.out.println("NO REQUEST!");
             return;
         }
-
         // parse request data
         JSONObject payload = parseJSON(body.toString());
+
         // get branch to clone
         JSONObject repositoryJSON = (JSONObject) payload.get("repository");
         String repositoryURL = (String) repositoryJSON.get("clone_url");
         String branch = (String) payload.get("ref");
+
+        // variables we want to store 
+        String compileOutput = "";
+        String testOutput = "";
         
         // here you do all the continuous integration tasks
         try {
@@ -66,20 +92,11 @@ public class App extends AbstractHandler {
             System.out.println("CLONE SUCCESS, starting build, this may take a while...");
             // 2nd compile the code
             File repoDirectory = git.getRepository().getDirectory().getParentFile();
-            String compileOutput;
             compileOutput = compileRepository(repoDirectory);
             System.out.println("COMPILE SUCCESS, compiling clone was successfull!");
             // 3rd run tests
-            String testOutput;
             testOutput = runTests(git.getRepository().getDirectory().getParentFile());
             System.out.println("TEST FINNISHED, all tests have been run");
-
-            // check in console that we have actually captured any console output
-            boolean compileOutputState = compileOutput != "";
-            System.out.println("READ compile data: " + compileOutputState);
-
-            boolean testOutputState = testOutput != "";
-            System.out.println("READ test data: " + testOutputState);
 
         } catch (GitAPIException e) {
             System.err.println("[ERROR] FAILED to CLONE repository...");
@@ -89,18 +106,19 @@ public class App extends AbstractHandler {
             e.printStackTrace();
         }
         catch (InterruptedException e) {
-            System.err.println("repository compile INTERRUPTED.");
+            System.err.println("[ABORT] repository compile INTERRUPTED.");
             e.printStackTrace();
         }
+        finally {
+            // 
+            System.out.println("========== DATA STATE ==========");
+            // check in console that we have actually captured any console output
+            boolean compileOutputState = compileOutput != "";
+            System.out.println("READ compile data: " + compileOutputState);
 
-        response.setContentType("text/html;charset=utf-8");
-        response.setStatus(HttpServletResponse.SC_OK);
-        baseRequest.setHandled(true);
-        try {
-            response.getWriter().println("CI job done");
-        } catch (IOException e) {
-            System.err.println("Server Response FAILED.");
-            e.printStackTrace();
+            boolean testOutputState = testOutput != "";
+            System.out.println("READ test data: " + testOutputState);
+            System.out.println("CI-actions finnished");
         }
     }
 
@@ -178,6 +196,7 @@ public class App extends AbstractHandler {
         return output;
     }
 
+    // TODO: add documentation
     public static String runTests(File repoDir)
         throws IOException, InterruptedException {
 
@@ -198,8 +217,8 @@ public class App extends AbstractHandler {
 
     /**
      * @param str The string that should be parsed into a JSONObject
-     * @return A JSONObject representing the parsed string, or an empty JSONObject 
-     * if the parsing fails
+     * @return A JSONObject representing the parsed string, or an empty JSONObject
+     *         if the parsing fails
      */
     private JSONObject parseJSON(String str) {
         try {
@@ -213,6 +232,7 @@ public class App extends AbstractHandler {
         }
     }
 
+    // TODO: add documentation
     private StringBuilder readRequest(Request baseRequest) {
         try {
             BufferedReader contentReader = new BufferedReader(baseRequest.getReader());
