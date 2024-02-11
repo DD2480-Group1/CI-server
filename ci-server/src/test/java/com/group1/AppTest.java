@@ -17,11 +17,9 @@ public class AppTest
     {
         assertTrue( true );
     }
-    /*
     @Test
     public void dummy()
     {
         assertTrue( true );
     }
-    */
 }
