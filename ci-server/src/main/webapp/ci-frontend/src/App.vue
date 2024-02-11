@@ -13,7 +13,11 @@
     <v-row>
       <v-col cols="12">
         <div class="d-flex justify-center">
-          <v-select :items="repositories" label="Repo"></v-select>
+          <v-select
+            :items="repositories"
+            label="Repo"
+            @click="getRepo"
+          ></v-select>
           <v-select :items="branches" label="Branch"></v-select>
           <v-select :items="commits" label="Commit"></v-select>
         </div>
@@ -77,6 +81,7 @@
   </v-container>
 </template>
 <script>
+import axios from "axios";
 export default {
   data: () => ({
     commits: [
@@ -92,17 +97,29 @@ export default {
     log: "",
     compilePassed: 0, // 0: not tested, 1: passed, 2: failed
     testPassed: 0, // 0: not tested, 1: passed, 2: failed
+    post: null,
   }),
 
   methods: {
     refresh() {
       console.log("refreshing...");
-      // this.compilePassed = (this.compilePassed + 1) % 3;
+      this.log += "refreshing...\n";
+      this.compilePassed = (this.compilePassed + 1) % 3;
     },
 
     fetch() {
       console.log("fetching...");
-      // this.testPassed = (this.testPassed + 1) % 3;
+      this.log += "fetching...\n";
+      this.testPassed = (this.testPassed + 1) % 3;
+    },
+
+    async getRepo() {
+      // this.post = await axios.get(
+      // "https://formally-quick-krill.ngrok-free.app/ci/api/repo"
+      // );
+      this.post = await axios.get("http://localhost:8080/ci/api/repo");
+      this.repositories = this.post.data.repos;
+      console.log(this.repositories);
     },
   },
 };
