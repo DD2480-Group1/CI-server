@@ -10,6 +10,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
 public class App extends AbstractHandler {
     public void handle(String target,
             Request baseRequest,
@@ -29,6 +32,22 @@ public class App extends AbstractHandler {
 
         response.getWriter().println("CI job done");
     }
+    
+    /**
+     * @param str The string that should be parsed into a JSONObject
+     * @return A JSONObject representing the parsed string, or an empty JSONObject 
+     * if the parsing fails
+     * */
+    private JSONObject parseJSON(String str) {
+        try {
+            JSONParser parser = new JSONParser();
+            JSONObject json = (JSONObject) parser.parse(str);
+            return json;
+        } catch (org.json.simple.parser.ParseException e) {
+            System.err.println("[ERROR] In parseJSON(String): Failed parsing Json from string"); 
+            return new JSONObject();
+        }
+    }
 
     // used to start the CI server in command line
     public static void main(String[] args) throws Exception {
@@ -38,3 +57,4 @@ public class App extends AbstractHandler {
         server.join();
     }
 }
+
