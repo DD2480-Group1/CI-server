@@ -5,9 +5,9 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 
 import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 //import java.util.List;
@@ -18,12 +18,16 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 // GIT
 import org.eclipse.jgit.api.Git;
-//import org.eclipse.jgit.api.ListBranchCommand.ListMode;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.api.errors.GitAPIException;
+
+//import org.eclipse.jgit.api.ListBranchCommand.ListMode;
 //import org.eclipse.jgit.lib.Ref;
 //import org.eclipse.jgit.revwalk.RevCommit;
 
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+// JSON
+import org.json.simple.JSONObject;
+import org.json.simple.parser.*;
 
 public class App extends AbstractHandler {
     private static int PORT = 8080;
@@ -36,43 +40,56 @@ public class App extends AbstractHandler {
             throws IOException, ServletException {
 
         System.out.println(target);
+        // handle request
+        StringBuilder body = readRequest(baseRequest);
+        // check if the body of the request is not zero
+        // otherwise, request should not be handled
+        if (baseRequest.getContentLength() == 0 || body == null || body.length() == 0) {
+            System.out.println("NO REQUEST!");
+            return;
+        }
 
+        // parse request data
+        JSONObject payload = parseJSON(body.toString());
+        // get branch to clone
+        JSONObject repositoryJSON = (JSONObject) payload.get("repository");
+        String repositoryURL = (String) repositoryJSON.get("clone_url");
+        String branch = (String) payload.get("ref");
+        
         // here you do all the continuous integration tasks
         try {
             // 1st clone your repository
             // get token from secret file
             String token = readToken("secret/github_token.txt");
             // get branch from request
-            Git git = cloneRepository("https://github.com/DD2480-Group1/CI-server", token);
+            Git git = cloneRepository(repositoryURL, branch, token);
             System.out.println("CLONE SUCCESS, starting build, this may take a while...");
             // 2nd compile the code
-            compileRepository(git.getRepository().getDirectory().getParentFile());
-            System.out.println("BUILD SUCCESS, compiling clone was successfull!");
-            
-            // Handle git data...
-            /*
-            // get all branches
-            List<Ref> branches = git.branchList().setListMode(ListMode.ALL).call();
-            for (Ref branch : branches) {
-                System.out.println("Branch: " + branch.getName());
-            }
+            File repoDirectory = git.getRepository().getDirectory().getParentFile();
+            String compileOutput;
+            compileOutput = compileRepository(repoDirectory);
+            System.out.println("COMPILE SUCCESS, compiling clone was successfull!");
+            // 3rd run tests
+            String testOutput;
+            testOutput = runTests(git.getRepository().getDirectory().getParentFile());
+            System.out.println("TEST FINNISHED, all tests have been run");
 
-            // get commit history
-            Iterable<RevCommit> logs = git.log().all().call();
-            for (RevCommit rev : logs) {
-                System.out.println("Commit: " + rev);
-            }
-            */
+            // check in console that we have actually captured any console output
+            boolean compileOutputState = compileOutput != "";
+            System.out.println("READ compile data: " + compileOutputState);
+
+            boolean testOutputState = testOutput != "";
+            System.out.println("READ test data: " + testOutputState);
 
         } catch (GitAPIException e) {
-            System.out.println("FAILED to CLONE repository...");
+            System.err.println("[ERROR] FAILED to CLONE repository...");
             e.printStackTrace();
         }
         catch (IOException e) {
             e.printStackTrace();
         }
         catch (InterruptedException e) {
-            System.out.println("repository compile INTERRUPTED.");
+            System.err.println("repository compile INTERRUPTED.");
             e.printStackTrace();
         }
 
@@ -82,7 +99,7 @@ public class App extends AbstractHandler {
         try {
             response.getWriter().println("CI job done");
         } catch (IOException e) {
-            System.out.println("Server Response FAILED.");
+            System.err.println("Server Response FAILED.");
             e.printStackTrace();
         }
     }
@@ -98,16 +115,48 @@ public class App extends AbstractHandler {
      * @throws GitAPIException
      * @throws IOException
      */
-    public static Git cloneRepository(String repoUrl, String token) 
+    public static Git cloneRepository(String repoURL, String branch, String token) 
         throws GitAPIException, IOException {
 
         File localPath = Files.createTempDirectory("ci-temporary").toFile();
         return Git.cloneRepository()
-            .setURI(repoUrl)
+            .setURI(repoURL)
+            .setBranch(branch)
             .setDirectory(localPath)
             // pass the token as username, is enough for token to work
             .setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, ""))
             .call();
+    }
+
+    // TODO: add documentation
+    public static String runCommand(String[] command, File file) 
+        throws IOException, InterruptedException {
+            
+        StringBuilder output = new StringBuilder();
+        
+        // initialize builder with commands
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        // set the correct working directory, point to it
+        processBuilder.directory(file);
+        Process process = processBuilder.start();
+        // redirect error stream, to caputre it and print it where it occurs
+        processBuilder.redirectErrorStream(true);
+        // capture standard output
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            output.append(line + "\n");            
+        }
+        System.out.println(output.toString());
+        // wait for exit
+        int exit = process.waitFor();
+
+        // check exit code to see that compilation was successful
+        if (exit != 0) {
+            throw new IOException("[ERROR] Command execution failed, exit code: " + exit + "\n" + output.toString());
+        }
+
+        return output.toString();
     }
 
     /**
@@ -117,38 +166,27 @@ public class App extends AbstractHandler {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static void compileRepository(File repoDir) 
+    public static String compileRepository(File repoDir) 
         throws IOException, InterruptedException {
         
         // shell command used, using maven to compile repository
-        String[] command = {"mvn", "clean", "install"};
-
-        // initialize builder with commands
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
-        // set the correct working directory, point to it
+        // skip the test, we only want to compile
+        String[] command = {"mvn", "clean", "install", "-DskipTests"};
         File workingFile = new File(repoDir, "ci-server");
-        processBuilder.directory(workingFile);
-        Process process = processBuilder.start();
-        // redirect error stream, to caputre it and print it
-        /*
-        processBuilder.redirectErrorStream(true);
-        // start builder
-        Process process = processBuilder.start();
-        // capture output
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        StringBuilder output = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            output.append(line + "\n");            
-        }
-         */
-        // wait for exit
-        int exit = process.waitFor();
+        String output = runCommand(command, workingFile);
 
-        // check exit code to see that compilation was successful
-        if (exit != 0) {
-            throw new IOException("FAILED to COMPILE, exit code: " + exit); //+ ", output: " + output.toString());
-        }
+        return output;
+    }
+
+    public static String runTests(File repoDir)
+        throws IOException, InterruptedException {
+
+        // shell command used, run the test file
+        String[] command = {"mvn", "-B", "test", "--file", "pom.xml"};
+        File workingFile = new File(repoDir, "ci-server");
+        String output = runCommand(command, workingFile);
+
+        return output;
     }
 
     // TODO: add documentation
@@ -172,6 +210,29 @@ public class App extends AbstractHandler {
             System.err.println("[ERROR] In parseJSON(String): Failed parsing Json from string"); 
             e.printStackTrace();
             return new JSONObject();
+        }
+    }
+
+    private StringBuilder readRequest(Request baseRequest) {
+        try {
+            BufferedReader contentReader = new BufferedReader(baseRequest.getReader());
+
+            System.out.println("Request Body: ");
+            String line = contentReader.readLine();
+    
+            StringBuilder body = new StringBuilder();
+    
+            while (line != null) {
+                body.append(line);
+                line = contentReader.readLine();
+            }
+
+            return body;
+
+        } catch (IOException e) {
+            System.err.println("[ERROR] FAILED to read request.");
+            e.printStackTrace();
+            return null;
         }
     }
 
