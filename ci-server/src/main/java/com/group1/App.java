@@ -40,7 +40,9 @@ public class App extends AbstractHandler {
         // here you do all the continuous integration tasks
         try {
             // 1st clone your repository
+            // get token from secret file
             String token = readToken("secret/github_token.txt");
+            // get branch from request
             Git git = cloneRepository("https://github.com/DD2480-Group1/CI-server", token);
             System.out.println("CLONE SUCCESS, starting build, this may take a while...");
             // 2nd compile the code
@@ -149,10 +151,28 @@ public class App extends AbstractHandler {
         }
     }
 
+    // TODO: add documentation
     public static String readToken(String filePath) 
         throws IOException {
 
         return new String(Files.readAllBytes(Paths.get(filePath)), StandardCharsets.UTF_8).trim();
+    }
+
+    /**
+     * @param str The string that should be parsed into a JSONObject
+     * @return A JSONObject representing the parsed string, or an empty JSONObject 
+     * if the parsing fails
+     */
+    private JSONObject parseJSON(String str) {
+        try {
+            JSONParser parser = new JSONParser();
+            JSONObject json = (JSONObject) parser.parse(str);
+            return json;
+        } catch (org.json.simple.parser.ParseException e) {
+            System.err.println("[ERROR] In parseJSON(String): Failed parsing Json from string"); 
+            e.printStackTrace();
+            return new JSONObject();
+        }
     }
 
     /**
