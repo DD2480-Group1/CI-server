@@ -45,3 +45,9 @@ buildNumber.properties
 .vscode/
 .idea/
 .cache/
+
+# MaxOX
+**/.DS_Store
+
+# Hide github secret token
+secret/
