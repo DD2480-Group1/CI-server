@@ -18,9 +18,5 @@ public class AppTest
         assertTrue( true );
     }
 
-    @Test
-    public void testyTesty()
-    {
-        assertTrue( true );
-    }
+
 }
