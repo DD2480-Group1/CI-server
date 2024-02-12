@@ -136,10 +136,11 @@ public class App extends AbstractHandler {
             for (String commit : commits) {
                 JSONObject commitObj = new JSONObject();
                 commitObj.put("name", commit);
-                commitObj.put("hash", "123345");
+                commitObj.put("branch", "test-branch");
+                commitObj.put("commit", "123345");
                 commitObj.put("log", "commit log\n\n hahaha");
-                commitObj.put("compilePass", "0");
-                commitObj.put("testPass", "0");
+                commitObj.put("compilePassed", "1");
+                commitObj.put("testPassed", "2");
 
                 commitList.add(commitObj);
             }
