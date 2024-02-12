@@ -129,6 +129,7 @@ public class App extends AbstractHandler {
             System.err.println("[ABORT] repository compile INTERRUPTED.");
             e.printStackTrace();
         }
+        // if this error is reached, we failed to create a commit status, so do not try to do it again
         catch (Exception e) {
             e.printStackTrace();
         }
@@ -253,6 +254,7 @@ public class App extends AbstractHandler {
             contentJSON.put("state", state);
             contentJSON.put("context", "ci");
             contentJSON.put("description", "CI Status");
+            contentJSON.put("target_url", "https://www.google.se/?hl=sv");
             
             String JSONString = contentJSON.toJSONString();
 
