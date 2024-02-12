@@ -280,8 +280,12 @@ public class App extends AbstractHandler {
             System.out.println("READ test data: " + testOutputState);
             
             // save the data
-            saveData(repositoryName, branch, commitName, commitSHA, commitTimestamp, compileState, testState, 
-            compileOutput, testOutput);
+            // extract branch name
+            String[] parts = branch.split("heads/");
+            String branchName = parts[1];
+            // now save data to a file
+            saveData(repositoryName, branchName, commitName, commitSHA, commitTimestamp, compileState, testState, 
+                compileOutput, testOutput);
 
             System.out.println("CI-actions finnished");
         }
@@ -496,7 +500,7 @@ public class App extends AbstractHandler {
         JSONObject commitObj = new JSONObject();
         commitObj.put("repo", repoName);
         commitObj.put("branch", branch);
-        commitObj.put("commit", commitSHA);
+        commitObj.put("commit", commit);
         commitObj.put("commit hash", commitSHA);
         commitObj.put("time", time);
         commitObj.put("compilePass", compilePass);
