@@ -1,7 +1,9 @@
 package com.group1;
 
+// read file
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -12,20 +14,28 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+// server 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 // Jetty Server
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.ResourceHandler;
+
 // GIT
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+
 // JSON
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.JSONArray;
 
 public class App extends AbstractHandler {
     private static int PORT = 8080;
@@ -36,9 +46,116 @@ public class App extends AbstractHandler {
             HttpServletRequest request,
             HttpServletResponse response)
             throws IOException, ServletException {
+        // debug print
+        System.out.println("Handling request: " + target);
+        System.out.println("Method: " + baseRequest.getMethod());
 
-        System.out.println(target);
-        
+        if (target.startsWith("/api/repo")) {
+            System.out.println("handling /api/repo");
+            response.setContentType("application/json;charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            baseRequest.setHandled(true);
+
+            JSONObject obj = new JSONObject();
+            JSONArray list = new JSONArray();
+
+            String[] repos = new File("data").list(new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return new File(dir, name).isDirectory();
+                }
+            });
+
+            for (String repo : repos) {
+                list.add(repo);
+            }
+            obj.put("repos", list);
+            obj.put("type", "repo");
+
+            response.getWriter().println(obj.toJSONString());
+
+            return;
+        }
+        if (target.startsWith("/api/branch")) {
+            System.out.println("handling /api/branch");
+            String repo = request.getParameter("repo");
+            if (repo.equals("")) {
+                response.setContentType("application/json;charset=utf-8");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                JSONObject obj = new JSONObject();
+                JSONArray list = new JSONArray();
+                obj.put("branches", list);
+                obj.put("type", "branch");
+                baseRequest.setHandled(true);
+                return;
+            }
+
+            response.setContentType("application/json;charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            baseRequest.setHandled(true);
+
+            JSONObject obj = new JSONObject();
+            JSONArray list = new JSONArray();
+
+            String[] branches = new File("data/" + repo).list(new FilenameFilter() {
+
+                public boolean accept(File dir, String name) {
+                    return new File(dir, name).isDirectory();
+                }
+            });
+
+            for (String branch : branches) {
+                list.add(branch);
+            }
+            obj.put("branches", list);
+            obj.put("type", "branch");
+
+            response.getWriter().println(obj.toJSONString());
+
+            return;
+        }
+        if (target.startsWith("/api/commit")) {
+            System.out.println("handling /api/commit");
+            String repo = request.getParameter("repo");
+            String branch = request.getParameter("branch");
+            if (repo.equals("") || branch.equals("")) {
+                response.setContentType("application/json;charset=utf-8");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                JSONObject obj = new JSONObject();
+                JSONArray list = new JSONArray();
+                obj.put("commits", list);
+                obj.put("type", "commit");
+                baseRequest.setHandled(true);
+                return;
+            }
+
+            response.setContentType("application/json;charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            baseRequest.setHandled(true);
+
+            JSONObject obj = new JSONObject();
+
+            String[] commits = new File("data/" + repo + "/" + branch).list();
+
+            JSONArray commitList = new JSONArray();
+            for (String commit : commits) {
+                JSONObject commitObj = new JSONObject();
+                commitObj.put("name", commit);
+                commitObj.put("hash", "123345");
+                commitObj.put("log", "commit log\n\n hahaha");
+                commitObj.put("compilePass", "0");
+                commitObj.put("testPass", "0");
+
+                commitList.add(commitObj);
+            }
+
+            obj.put("commits", commitList);
+            obj.put("type", "commit");
+
+            response.getWriter().println(obj.toJSONString());
+
+            return;
+        }
+
         // Handle POST requests from GitHub
         if (target.equals("/") && baseRequest.getMethod().equals("POST")) {
             handleWebhook(target, baseRequest, request, response);
@@ -65,7 +182,7 @@ public class App extends AbstractHandler {
             HttpServletRequest request,
             HttpServletResponse response)
             throws IOException, ServletException {
-        
+
         // Parse the JSON file in the request body
         StringBuilder body = readRequest(baseRequest);
         // check if the body of the request is not zero
@@ -91,10 +208,10 @@ public class App extends AbstractHandler {
         // get github token from secret file
         String token = readToken("secret/github_token.txt");
 
-        // variables we want to store 
+        // variables we want to store
         String compileOutput = "";
         String testOutput = "";
-        
+
         // here you do all the continuous integration tasks
         try {
             // 1st clone your repository
@@ -114,6 +231,7 @@ public class App extends AbstractHandler {
 
             // 4th notify GitHub test results
             // success = all test passed, failure = one or more tests failed
+            String testState = "";
             createCommitStatus(repositoryName, commitSHA, "success", token);
 
         } catch (GitAPIException e) {
@@ -132,9 +250,7 @@ public class App extends AbstractHandler {
         // if this error is reached, we failed to create a commit status, so do not try to do it again
         catch (Exception e) {
             e.printStackTrace();
-        }
-        finally {
-            // 
+        } finally {
             System.out.println("========== DATA STATE ==========");
             // check in console that we have actually captured any console output
             boolean compileOutputState = compileOutput != "";
@@ -147,35 +263,37 @@ public class App extends AbstractHandler {
     }
 
     /**
-     * Clone repository function gets/downloads the repository from Git and returns it.
+     * Clone repository function gets/downloads the repository from Git and returns
+     * it.
      * Store the files in a temporary directory that will be deleted automatically
      * when session is complete.
-     * @param repoUrl URL to repository, use SSH key to get it
+     * 
+     * @param repoUrl  URL to repository, use SSH key to get it
      * @param username username login
      * @param password password login
      * @return
      * @throws GitAPIException
      * @throws IOException
      */
-    public static Git cloneRepository(String repoURL, String branch, String token) 
-        throws GitAPIException, IOException {
+    public static Git cloneRepository(String repoURL, String branch, String token)
+            throws GitAPIException, IOException {
 
         File localPath = Files.createTempDirectory("ci-temporary").toFile();
         return Git.cloneRepository()
-            .setURI(repoURL)
-            .setBranch(branch)
-            .setDirectory(localPath)
-            // pass the token as username, is enough for token to work
-            .setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, ""))
-            .call();
+                .setURI(repoURL)
+                .setBranch(branch)
+                .setDirectory(localPath)
+                // pass the token as username, is enough for token to work
+                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(token, ""))
+                .call();
     }
 
     // TODO: add documentation
-    public static String runCommand(String[] command, File file) 
-        throws IOException, InterruptedException {
-            
+    public static String runCommand(String[] command, File file)
+            throws IOException, InterruptedException {
+
         StringBuilder output = new StringBuilder();
-        
+
         // initialize builder with commands
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         // set the correct working directory, point to it
@@ -187,7 +305,7 @@ public class App extends AbstractHandler {
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line;
         while ((line = reader.readLine()) != null) {
-            output.append(line + "\n");            
+            output.append(line + "\n");
         }
         System.out.println(output.toString());
         // wait for exit
@@ -202,18 +320,20 @@ public class App extends AbstractHandler {
     }
 
     /**
-     * Compile repository function uses ProcessBuilder to execture shell commands in Java.
+     * Compile repository function uses ProcessBuilder to execture shell commands in
+     * Java.
      * Compiles the repository and catches any errors.
+     * 
      * @param repoDir
      * @throws IOException
      * @throws InterruptedException
      */
-    public static String compileRepository(File repoDir) 
-        throws IOException, InterruptedException {
-        
+    public static String compileRepository(File repoDir)
+            throws IOException, InterruptedException {
+
         // shell command used, using maven to compile repository
         // skip the test, we only want to compile
-        String[] command = {"mvn", "clean", "install", "-DskipTests"};
+        String[] command = { "mvn", "clean", "install", "-DskipTests" };
         File workingFile = new File(repoDir, "ci-server");
         String output = runCommand(command, workingFile);
 
@@ -222,10 +342,10 @@ public class App extends AbstractHandler {
 
     // TODO: add documentation
     public static String runTests(File repoDir)
-        throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
 
         // shell command used, run the test file
-        String[] command = {"mvn", "-B", "test", "--file", "pom.xml"};
+        String[] command = { "mvn", "-B", "test", "--file", "pom.xml" };
         File workingFile = new File(repoDir, "ci-server");
         String output = runCommand(command, workingFile);
 
@@ -284,8 +404,8 @@ public class App extends AbstractHandler {
     }
 
     // TODO: add documentation
-    public static String readToken(String filePath) 
-        throws IOException {
+    public static String readToken(String filePath)
+            throws IOException {
 
         return new String(Files.readAllBytes(Paths.get(filePath)), StandardCharsets.UTF_8).trim();
     }
@@ -301,7 +421,7 @@ public class App extends AbstractHandler {
             JSONObject json = (JSONObject) parser.parse(str);
             return json;
         } catch (org.json.simple.parser.ParseException e) {
-            System.err.println("[ERROR] In parseJSON(String): Failed parsing Json from string"); 
+            System.err.println("[ERROR] In parseJSON(String): Failed parsing Json from string");
             e.printStackTrace();
             return new JSONObject();
         }
@@ -314,9 +434,9 @@ public class App extends AbstractHandler {
 
             System.out.println("Request Body: ");
             String line = contentReader.readLine();
-    
+
             StringBuilder body = new StringBuilder();
-    
+
             while (line != null) {
                 body.append(line);
                 line = contentReader.readLine();
@@ -333,13 +453,27 @@ public class App extends AbstractHandler {
 
     /**
      * Main function starts a Jetty server works
-     * as the CI server. 
+     * as the CI server.
+     * 
      * @param args command-line arguments
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
+        ContextHandler dashContextHandler = new ContextHandler("/");
+        ResourceHandler resourceHandler = new ResourceHandler();
+        resourceHandler.setResourceBase("src/main/webapp/ci-frontend/dist/");
+        dashContextHandler.setHandler(resourceHandler);
+
+        ContextHandler ciContextHandler = new ContextHandler("/ci");
+        ciContextHandler.setHandler(new App());
+
+        HandlerList handlers = new HandlerList();
+        handlers.addHandler(dashContextHandler);
+        handlers.addHandler(ciContextHandler);
+
         Server server = new Server(PORT);
-        server.setHandler(new App());
+        server.setHandler(handlers);
+
         try {
             server.start();
             System.out.println(("Sucess! Server started on port " + PORT));
