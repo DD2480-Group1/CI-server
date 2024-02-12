@@ -241,7 +241,7 @@ public class App extends AbstractHandler {
             File repoDirectory = git.getRepository().getDirectory().getParentFile();
             compileOutput = compileRepository(repoDirectory);
             System.out.println("COMPILE SUCCESS, compiling clone was successfull!");
-            // set compile state
+            // set compile state, compilation was successfull
             compileState = true;
 
             // 3rd run tests
@@ -250,10 +250,18 @@ public class App extends AbstractHandler {
 
             // 4th notify GitHub test results
             // success = all test passed, failure = one or more tests failed
-            // TODO: fix check to see if test passed or not
-            // errorState
             String testGitState = "";
-            createCommitStatus(repositoryFullName, commitSHA, "success", token);
+            // count amount of tests that failed, if -1 no errors were found
+            int testFailCount = getTestFailures(testOutput);
+            if (testFailCount == -1) {
+                testGitState = "success";
+                // set test state to true, all test passed
+                testState = true;
+            } else {
+                testGitState = "failure";
+            }
+            // report back the test results as Git status
+            createCommitStatus(repositoryFullName, commitSHA, testGitState, token);
 
         } catch (GitAPIException e) {
             System.err.println("[ERROR] FAILED to CLONE repository...");
