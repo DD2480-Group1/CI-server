@@ -46,6 +46,7 @@ buildNumber.properties
 .idea/
 .cache/
 
+ngrok*
 # MaxOX
 **/.DS_Store
 
