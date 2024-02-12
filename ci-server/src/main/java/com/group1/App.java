@@ -1,20 +1,19 @@
 package com.group1;
 
+// read file
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+// server 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-// read file
-import java.io.File;
-import java.io.FilenameFilter;
 
 // Jetty Server
 import org.eclipse.jetty.server.Request;
@@ -23,10 +22,12 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+
 // GIT
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+
 // JSON
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -150,7 +151,6 @@ public class App extends AbstractHandler {
 
             return;
         }
-        System.out.println(target);
 
         // Handle POST requests from GitHub
         if (target.equals("/") && baseRequest.getMethod().equals("POST")) {
@@ -224,7 +224,6 @@ public class App extends AbstractHandler {
             System.err.println("[ABORT] repository compile INTERRUPTED.");
             e.printStackTrace();
         } finally {
-            //
             System.out.println("========== DATA STATE ==========");
             // check in console that we have actually captured any console output
             boolean compileOutputState = compileOutput != "";
