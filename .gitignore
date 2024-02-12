@@ -47,3 +47,8 @@ buildNumber.properties
 .cache/
 
 ngrok*
+# MaxOX
+**/.DS_Store
+
+# Hide github secret token
+secret/
