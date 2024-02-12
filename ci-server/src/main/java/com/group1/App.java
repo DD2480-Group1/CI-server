@@ -41,8 +41,12 @@ public class App extends AbstractHandler {
             HttpServletRequest request,
             HttpServletResponse response)
             throws IOException, ServletException {
+        // debug print
+        System.out.println("Handling request: " + target);
+        System.out.println("Method: " + baseRequest.getMethod());
 
         if (target.startsWith("/api/repo")) {
+            System.out.println("handling /api/repo");
             response.setContentType("application/json;charset=utf-8");
             response.setStatus(HttpServletResponse.SC_OK);
             baseRequest.setHandled(true);
@@ -66,8 +70,8 @@ public class App extends AbstractHandler {
 
             return;
         }
-
         if (target.startsWith("/api/branch")) {
+            System.out.println("handling /api/branch");
             String repo = request.getParameter("repo");
             if (repo.equals("")) {
                 response.setContentType("application/json;charset=utf-8");
@@ -94,9 +98,7 @@ public class App extends AbstractHandler {
                 }
             });
 
-            for (
-
-            String branch : branches) {
+            for (String branch : branches) {
                 list.add(branch);
             }
             obj.put("branches", list);
@@ -107,6 +109,7 @@ public class App extends AbstractHandler {
             return;
         }
         if (target.startsWith("/api/commit")) {
+            System.out.println("handling /api/commit");
             String repo = request.getParameter("repo");
             String branch = request.getParameter("branch");
             if (repo.equals("") || branch.equals("")) {
