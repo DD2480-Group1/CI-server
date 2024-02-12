@@ -33,6 +33,9 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.JSONArray;
 
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
 public class App extends AbstractHandler {
     private static int PORT = 8080;
 
@@ -347,6 +350,29 @@ public class App extends AbstractHandler {
             e.printStackTrace();
             return new JSONObject();
         }
+    }
+
+    /**
+     * Extracts the number of failed tests from mvn test output
+     *
+     * @param testOutput The output from the mvn test function
+     * @return The number of failed tests from the testoutput or -1
+     * if no match is found or an error occurs during parsing.
+     * */
+    public int getTestFailures(String testOutput) {
+        String regex = "Tests run: \\d+, Failures: \\d+, Errors: (\\d+), Skipped: \\d+";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(testOutput);
+
+        while (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(1));
+            } catch (NumberFormatException e) {
+                // do nothing
+            }
+        }
+
+        return -1;
     }
 
     // TODO: add documentation
