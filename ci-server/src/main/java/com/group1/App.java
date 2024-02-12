@@ -6,6 +6,10 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -190,10 +194,19 @@ public class App extends AbstractHandler {
         // parse request data
         JSONObject payload = parseJSON(body.toString());
 
-        // get branch to clone
+        // extract GitHub data from POST request
         JSONObject repositoryJSON = (JSONObject) payload.get("repository");
+        // get repository URL
         String repositoryURL = (String) repositoryJSON.get("clone_url");
+        // get repository name
+        String repositoryName = (String) repositoryJSON.get("full_name");
+        // get the branch name the commit is on
         String branch = (String) payload.get("ref");
+        // get the commit SHA
+        String commitSHA = (String) payload.get("after");
+
+        // get github token from secret file
+        String token = readToken("secret/github_token.txt");
 
         // variables we want to store
         String compileOutput = "";
@@ -202,11 +215,12 @@ public class App extends AbstractHandler {
         // here you do all the continuous integration tasks
         try {
             // 1st clone your repository
-            // get token from secret file
-            String token = readToken("secret/github_token.txt");
             // get branch from request
             Git git = cloneRepository(repositoryURL, branch, token);
             System.out.println("CLONE SUCCESS, starting build, this may take a while...");
+            // notify GitHub 
+            createCommitStatus(repositoryName, commitSHA, "pending", token);
+            
             // 2nd compile the code
             File repoDirectory = git.getRepository().getDirectory().getParentFile();
             compileOutput = compileRepository(repoDirectory);
@@ -215,13 +229,27 @@ public class App extends AbstractHandler {
             testOutput = runTests(git.getRepository().getDirectory().getParentFile());
             System.out.println("TEST FINNISHED, all tests have been run");
 
+            // 4th notify GitHub test results
+            // success = all test passed, failure = one or more tests failed
+            // TODO: fix check to see if test passed or not
+            String testState = "";
+            createCommitStatus(repositoryName, commitSHA, "success", token);
+
         } catch (GitAPIException e) {
             System.err.println("[ERROR] FAILED to CLONE repository...");
             e.printStackTrace();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
+            createCommitStatus(repositoryName, commitSHA, "error", token);
             e.printStackTrace();
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e) {
+            createCommitStatus(repositoryName, commitSHA, "error", token);
             System.err.println("[ABORT] repository compile INTERRUPTED.");
+            e.printStackTrace();
+        }
+        // if this error is reached, we failed to create a commit status, so do not try to do it again
+        catch (Exception e) {
             e.printStackTrace();
         } finally {
             System.out.println("========== DATA STATE ==========");
@@ -323,6 +351,57 @@ public class App extends AbstractHandler {
         String output = runCommand(command, workingFile);
 
         return output;
+    }
+
+    public static void createCommitStatus(String repoName, String commitSHA, String state, String token) {
+        
+        try {
+            // define URL to GitHub API
+            URL apiURL = new URL("https://api.github.com/repos/" + repoName + "/statuses/" + commitSHA);
+            
+            // create connection
+            HttpURLConnection connection = (HttpURLConnection) apiURL.openConnection();
+            // BUILD POST to send data to GitHub
+            // set request method to POST
+            connection.setRequestMethod("POST");
+            // set authorization header with the token, allow us to have access
+            connection.setRequestProperty("Authorization", "token " + token);
+            // set the content type to JSON
+            connection.setRequestProperty("Content-Type", "application/json");
+            // enable output
+            connection.setDoOutput(true);
+            // create the JSON content with the state
+            JSONObject contentJSON = new JSONObject();
+            contentJSON.put("state", state);
+            contentJSON.put("context", "ci");
+            contentJSON.put("description", "CI Status");
+            contentJSON.put("target_url", "https://www.google.se/?hl=sv");
+            
+            String JSONString = contentJSON.toJSONString();
+
+            // write JSON content to output stream
+            try (OutputStream outputStream = connection.getOutputStream()) {
+                outputStream.write(JSONString.getBytes("UTF-8"));
+            }
+
+            // get response code
+            int responseCode = connection.getResponseCode();
+            // if equal 201 it means a request was "Created" and we are done
+            // if not, throw error, something went wrong
+            if (responseCode != 201) {
+                throw new Exception("[ERROR] Failed to create commit status, response code: " + responseCode);
+            }
+
+        } catch (MalformedURLException e) {
+            System.err.println("[ERROR] URL to GitHub API BAD.");
+            e.printStackTrace();
+        } catch (IOException e) {
+            System.err.println("[ERROR] Failed to open connection to GitHub API.");
+            e.printStackTrace();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // TODO: add documentation
