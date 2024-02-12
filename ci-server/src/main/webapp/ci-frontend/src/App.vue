@@ -30,22 +30,12 @@
             label="Commit"
             v-model="selectedCommit"
             @click="getCommit"
+            @input="fetch"
           ></v-select>
         </div>
       </v-col>
     </v-row>
   </v-container>
-
-  <!-- <div>
-    <v-container>
-      <v-row>
-        <div class="d-flex flex-wrap ga-3">
-          <v-btn color="primary" @click="refresh">Refresh</v-btn>
-          <v-btn color="primary" @click="fetch">Fetch</v-btn>
-        </div>
-      </v-row>
-    </v-container>
-  </div> -->
 
   <v-container>
     <v-row>
@@ -115,11 +105,11 @@ export default {
   }),
 
   methods: {
-    refresh() {
-      console.log("refreshing...");
-      this.log += "refreshing...\n";
-      this.compilePassed = (this.compilePassed + 1) % 3;
-    },
+    // refresh() {
+    //   console.log("refreshing...");
+    //   this.log += "refreshing...\n";
+    //   this.compilePassed = (this.compilePassed + 1) % 3;
+    // },
 
     fetch() {
       console.log("fetching...");
@@ -141,9 +131,6 @@ export default {
       // "https://formally-quick-krill.ngrok-free.app/ci/api/build/?repo=" +
       // this.repositories[0]
       // );
-      console.log(
-        "http://localhost:8080/ci/api/branch/?repo=" + this.selectedRepo
-      );
       this.post = await axios.get(
         "http://localhost:8080/ci/api/branch/?repo=" + this.selectedRepo
       );
@@ -157,20 +144,18 @@ export default {
       // "&branch=" +
       // this.branches[0]
       // );
-      console.log(
-        "http://localhost:8080/ci/api/commit/?repo=" +
-          this.selectedRepo +
-          "&branch=" +
-          this.selectedBranch
-      );
       this.post = await axios.get(
         "http://localhost:8080/ci/api/commit/?repo=" +
           this.selectedRepo +
           "&branch=" +
           this.selectedBranch
       );
-      this.commits = this.post.data.name;
-      console.log(this.commits);
+      // remove .json
+      for (let i = 0; i < this.post.data.commits.length; i++) {
+        // this.commits[i] = this.post.data.name[i].slice(0, -5);
+        this.commits[i] = this.post.data.commits[i].name.slice(0, -5);
+      }
+      console.log(this.post.data);
     },
   },
 };

@@ -2,13 +2,10 @@ package com.group1;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.filechooser.FileFilter;
 import javax.servlet.ServletException;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FilenameFilter;
 
 import org.eclipse.jetty.server.Server;
@@ -17,10 +14,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
-import org.json.simple.parser.*;
 
 public class App extends AbstractHandler {
     public void handle(String target,
@@ -109,24 +104,23 @@ public class App extends AbstractHandler {
             baseRequest.setHandled(true);
 
             JSONObject obj = new JSONObject();
-            JSONArray list = new JSONArray();
 
             String[] commits = new File("data/" + repo + "/" + branch).list();
 
-            // for (String commit : commits) {
-            // JSONArray array = (JSONArray) JSON.parse(new FileReader("data/" + repo + "/"
-            // + branch + "/"
-            // + commit));
-            // list.add(array);
-            // }
-
-            JSONArray commitsName = new JSONArray();
+            JSONArray commitList = new JSONArray();
             for (String commit : commits) {
-                commitsName.add(commit);
+                JSONObject commitObj = new JSONObject();
+                commitObj.put("name", commit);
+                commitObj.put("hash", "123345");
+                commitObj.put("log", "commit log\n\n hahaha");
+                commitObj.put("compilePass", "0");
+                commitObj.put("testPass", "0");
+
+                commitList.add(commitObj);
             }
-            obj.put("commits", list);
+
+            obj.put("commits", commitList);
             obj.put("type", "commit");
-            obj.put("name", commitsName);
 
             response.getWriter().println(obj.toJSONString());
 
