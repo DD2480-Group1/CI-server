@@ -14,6 +14,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // server 
 import javax.servlet.ServletException;
@@ -27,19 +29,14 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-
 // GIT
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
-
+import org.json.simple.JSONArray;
 // JSON
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.JSONArray;
-
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 public class App extends AbstractHandler {
     private static int PORT = 8080;
@@ -53,6 +50,9 @@ public class App extends AbstractHandler {
         // debug print
         System.out.println("Handling request: " + target);
         System.out.println("Method: " + baseRequest.getMethod());
+
+        // acknowledge webhook received with 202 status code
+        response.setStatus(HttpServletResponse.SC_ACCEPTED);
 
         if (target.startsWith("/api/repo")) {
             System.out.println("handling /api/repo");
@@ -235,7 +235,7 @@ public class App extends AbstractHandler {
             Git git = cloneRepository(repositoryURL, branch, token);
             System.out.println("CLONE SUCCESS, starting build, this may take a while...");
             // notify GitHub 
-            createCommitStatus(repositoryFullName, commitSHA, "pending", token);
+            createCommitStatus(repositoryFullName, commitSHA, "pending", token, "compiling repo on server...");
             
             // 2nd compile the code
             File repoDirectory = git.getRepository().getDirectory().getParentFile();
@@ -251,29 +251,33 @@ public class App extends AbstractHandler {
             // 4th notify GitHub test results
             // success = all test passed, failure = one or more tests failed
             String testGitState = "";
+            String testGitDescription = "";
             // count amount of tests that failed, if -1 no errors were found
             int testFailCount = getTestFailures(testOutput);
-            if (testFailCount == -1) {
+            System.out.println("Number of tests not passed: " + testFailCount);
+            if (testFailCount <= 0) {
                 testGitState = "success";
+                testGitDescription = "all CI tests passed";
                 // set test state to true, all test passed
                 testState = true;
             } else {
                 testGitState = "failure";
+                testGitDescription = "[" + testFailCount + "] unit tests failed";
             }
             // report back the test results as Git status
-            createCommitStatus(repositoryFullName, commitSHA, testGitState, token);
+            createCommitStatus(repositoryFullName, commitSHA, testGitState, token, testGitDescription);
 
         } catch (GitAPIException e) {
             System.err.println("[ERROR] FAILED to CLONE repository...");
             e.printStackTrace();
         }
         catch (IOException e) {
-            createCommitStatus(repositoryFullName, commitSHA, "error", token);
+            createCommitStatus(repositoryFullName, commitSHA, "error", token, "compile failed");
             compileState = false;
             e.printStackTrace();
         }
         catch (InterruptedException e) {
-            createCommitStatus(repositoryFullName, commitSHA, "error", token);
+            createCommitStatus(repositoryFullName, commitSHA, "error", token, "CI server was interrupted");
             System.err.println("[ABORT] repository compile INTERRUPTED.");
             compileState = false;
             e.printStackTrace();
@@ -392,7 +396,8 @@ public class App extends AbstractHandler {
         return output;
     }
 
-    public static void createCommitStatus(String repoName, String commitSHA, String state, String token) {
+    public static void createCommitStatus(String repoName, String commitSHA, String state, String token,
+        String description) {
         
         try {
             // define URL to GitHub API
@@ -412,8 +417,8 @@ public class App extends AbstractHandler {
             // create the JSON content with the state
             JSONObject contentJSON = new JSONObject();
             contentJSON.put("state", state);
-            contentJSON.put("context", "ci");
-            contentJSON.put("description", "CI Status");
+            contentJSON.put("context", "CI server");
+            contentJSON.put("description", description);
             // TODO: link to website
             contentJSON.put("target_url", "https://www.google.se/?hl=sv");
             
