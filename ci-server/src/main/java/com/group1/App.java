@@ -231,6 +231,7 @@ public class App extends AbstractHandler {
 
             // 4th notify GitHub test results
             // success = all test passed, failure = one or more tests failed
+            // TODO: fix check to see if test passed or not
             String testState = "";
             createCommitStatus(repositoryName, commitSHA, "success", token);
 
