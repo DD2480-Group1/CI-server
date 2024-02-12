@@ -3,6 +3,7 @@ package com.group1;
 // read file
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -199,11 +200,20 @@ public class App extends AbstractHandler {
         // get repository URL
         String repositoryURL = (String) repositoryJSON.get("clone_url");
         // get repository name
-        String repositoryName = (String) repositoryJSON.get("full_name");
+        String repositoryFullName = (String) repositoryJSON.get("full_name");
+        String repositoryName = (String) repositoryJSON.get("name");
         // get the branch name the commit is on
         String branch = (String) payload.get("ref");
         // get the commit SHA
         String commitSHA = (String) payload.get("after");
+        // get commit name & commit timestamp
+        JSONObject headCommitJSON = (JSONObject) payload.get("head_commit");
+        String commitName = (String) headCommitJSON.get("message");
+        // check if commit message is more than one line, handle it correclty
+        if (commitName.indexOf('\n') != -1) {
+            commitName = commitName.substring(0, commitName.indexOf('\n'));
+        }
+        String commitTimestamp = (String) headCommitJSON.get("timestamp");
 
         // get github token from secret file
         String token = readToken("secret/github_token.txt");
@@ -211,6 +221,9 @@ public class App extends AbstractHandler {
         // variables we want to store
         String compileOutput = "";
         String testOutput = "";
+        // checks
+        boolean compileState = false;
+        boolean testState = false;
 
         // here you do all the continuous integration tasks
         try {
@@ -219,12 +232,15 @@ public class App extends AbstractHandler {
             Git git = cloneRepository(repositoryURL, branch, token);
             System.out.println("CLONE SUCCESS, starting build, this may take a while...");
             // notify GitHub 
-            createCommitStatus(repositoryName, commitSHA, "pending", token);
+            createCommitStatus(repositoryFullName, commitSHA, "pending", token);
             
             // 2nd compile the code
             File repoDirectory = git.getRepository().getDirectory().getParentFile();
             compileOutput = compileRepository(repoDirectory);
             System.out.println("COMPILE SUCCESS, compiling clone was successfull!");
+            // set compile state
+            compileState = true;
+
             // 3rd run tests
             testOutput = runTests(git.getRepository().getDirectory().getParentFile());
             System.out.println("TEST FINNISHED, all tests have been run");
@@ -232,20 +248,23 @@ public class App extends AbstractHandler {
             // 4th notify GitHub test results
             // success = all test passed, failure = one or more tests failed
             // TODO: fix check to see if test passed or not
-            String testState = "";
-            createCommitStatus(repositoryName, commitSHA, "success", token);
+            // errorState
+            String testGitState = "";
+            createCommitStatus(repositoryFullName, commitSHA, "success", token);
 
         } catch (GitAPIException e) {
             System.err.println("[ERROR] FAILED to CLONE repository...");
             e.printStackTrace();
         }
         catch (IOException e) {
-            createCommitStatus(repositoryName, commitSHA, "error", token);
+            createCommitStatus(repositoryFullName, commitSHA, "error", token);
+            compileState = false;
             e.printStackTrace();
         }
         catch (InterruptedException e) {
-            createCommitStatus(repositoryName, commitSHA, "error", token);
+            createCommitStatus(repositoryFullName, commitSHA, "error", token);
             System.err.println("[ABORT] repository compile INTERRUPTED.");
+            compileState = false;
             e.printStackTrace();
         }
         // if this error is reached, we failed to create a commit status, so do not try to do it again
@@ -259,6 +278,11 @@ public class App extends AbstractHandler {
 
             boolean testOutputState = testOutput != "";
             System.out.println("READ test data: " + testOutputState);
+            
+            // save the data
+            saveData(repositoryName, branch, commitName, commitSHA, commitTimestamp, compileState, testState, 
+            compileOutput, testOutput);
+
             System.out.println("CI-actions finnished");
         }
     }
@@ -375,6 +399,7 @@ public class App extends AbstractHandler {
             contentJSON.put("state", state);
             contentJSON.put("context", "ci");
             contentJSON.put("description", "CI Status");
+            // TODO: link to website
             contentJSON.put("target_url", "https://www.google.se/?hl=sv");
             
             String JSONString = contentJSON.toJSONString();
@@ -449,6 +474,48 @@ public class App extends AbstractHandler {
             System.err.println("[ERROR] FAILED to read request.");
             e.printStackTrace();
             return null;
+        }
+    }
+
+    /**
+     * Save all the data in a file.
+     * 
+     * @param repoName
+     * @param branch
+     * @param commit
+     * @param commitSHA
+     * @param time
+     * @param compilePass
+     * @param testPass
+     * @param logCompile
+     * @param logTest
+     */
+    private void saveData(String repoName, String branch, String commit, String commitSHA, String time,
+        boolean compilePass, boolean testPass, String logCompile, String logTest) {
+        
+        JSONObject commitObj = new JSONObject();
+        commitObj.put("repo", repoName);
+        commitObj.put("branch", branch);
+        commitObj.put("commit", commitSHA);
+        commitObj.put("commit hash", commitSHA);
+        commitObj.put("time", time);
+        commitObj.put("compilePass", compilePass);
+        commitObj.put("testPass", testPass);
+        commitObj.put("log_compile", logCompile);
+        commitObj.put("log_test", logTest);
+
+        // create directory structure if it doesn't exist
+        File dir = new File("data/" + repoName + "/" + branch);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        // write JSON object to file
+        try (FileWriter file = new FileWriter(dir.getPath() + "/" + commitSHA + ".json")) {
+            file.write(commitObj.toJSONString());
+            file.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
