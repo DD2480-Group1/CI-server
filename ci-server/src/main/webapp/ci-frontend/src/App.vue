@@ -121,8 +121,8 @@ export default {
       // this.post = await axios.get(
       // "https://formally-quick-krill.ngrok-free.app/ci/api/repo"
       // );
-      console.log("http://localhost:8080/ci/api/repo");
-      this.post = await axios.get("http://localhost:8080/ci/api/repo");
+      console.log("https://skylark-fresh-whale.ngrok-free.app//ci/api/repo");
+      this.post = await axios.get("https://skylark-fresh-whale.ngrok-free.app//ci/api/repo");
       this.repositories = this.post.data.repos;
     },
 
@@ -132,7 +132,7 @@ export default {
       // this.repositories[0]
       // );
       this.post = await axios.get(
-        "http://localhost:8080/ci/api/branch/?repo=" + this.selectedRepo
+        "https://skylark-fresh-whale.ngrok-free.app//ci/api/branch/?repo=" + this.selectedRepo
       );
       this.branches = this.post.data.branches;
     },
@@ -145,7 +145,7 @@ export default {
       // this.branches[0]
       // );
       this.post = await axios.get(
-        "http://localhost:8080/ci/api/commit/?repo=" +
+        "https://skylark-fresh-whale.ngrok-free.app//ci/api/commit/?repo=" +
           this.selectedRepo +
           "&branch=" +
           this.selectedBranch
