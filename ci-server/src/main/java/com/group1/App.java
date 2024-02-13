@@ -645,11 +645,23 @@ public class App extends AbstractHandler {
         }
     }
 
+    /**
+     * Custom excpetion to handle compile errors, very simple
+     */
     static class CompileException extends Exception {
+        /**
+         * Constructor to create compile exception with custom message
+         * @param message Message to be displayed
+         */
         public CompileException(String message) {
             super(message);
         }
 
+        /**
+         * Constructor to create compile exception with custom message and throwable cause
+         * @param message Message to be displayed
+         * @param cause Represents underlying reason why error was thrown
+         */
         public CompileException(String message, Throwable cause) {
             super(message, cause);
         }
