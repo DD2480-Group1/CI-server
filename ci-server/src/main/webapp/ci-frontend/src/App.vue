@@ -82,6 +82,9 @@
   </v-container>
 </template>
 <script>
+// import the serverUrl from URL config
+import { serverUrl } from "../../URLconfig";
+
 import axios from "axios";
 export default {
   data: () => ({
@@ -103,7 +106,8 @@ export default {
     compilePassed: 0, // 0: not tested, 1: passed, 2: failed
     testPassed: 0, // 0: not tested, 1: passed, 2: failed
     post: null,
-    API_URL: "http://localhost:8080/ci/api/",
+    // API_URL: "http://localhost:8080/ci/api/",
+    API_URL: `${serverUrl}/ci/api/`,
     //    API_URL: "https://formally-quick-krill.ngrok-free.app/ci/api/",
   }),
 
