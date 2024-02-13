@@ -40,6 +40,7 @@
   <v-container>
     <v-row>
       <v-col cols="12">
+        {{ commitTime }}
         <div class="d-flex flex-wrap ga-2">
           <v-chip
             :prepend-icon="
@@ -69,15 +70,43 @@
           >
             Test
           </v-chip>
+          <v-chip
+            :prepend-icon="'mdi-source-repository'"
+            color="blue"
+            v-if="commitURL != ''"
+          >
+            <a :href="commitURL" target="_blank"> Goto Commit</a>
+          </v-chip>
         </div>
       </v-col>
-      <v-textarea
-        :readonly="isReadOnly"
-        label="Log"
-        outlined
-        rows="10"
-        v-model="log"
-      ></v-textarea>
+      <v-row>
+        <v-col>
+          <v-card>
+            <v-card-title>Compile Log</v-card-title>
+            <v-card-text>
+              <v-textarea
+                :readonly="isReadOnly"
+                outlined
+                rows="10"
+                v-model="log"
+              ></v-textarea>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col>
+          <v-card>
+            <v-card-title>Test Log</v-card-title>
+            <v-card-text>
+              <v-textarea
+                :readonly="isReadOnly"
+                outlined
+                rows="10"
+                v-model="testLog"
+              ></v-textarea>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
     </v-row>
   </v-container>
 </template>
@@ -103,12 +132,15 @@ export default {
     selectedRepo: "",
     isReadOnly: true,
     log: "",
+    testLog: "",
+    commitTime: "",
     compilePassed: 0, // 0: not tested, 1: passed, 2: failed
     testPassed: 0, // 0: not tested, 1: passed, 2: failed
     post: null,
     // API_URL: "http://localhost:8080/ci/api/",
     API_URL: `${serverUrl}/ci/api/`,
     //    API_URL: "https://formally-quick-krill.ngrok-free.app/ci/api/",
+    commitURL: "",
   }),
 
   created() {
@@ -136,8 +168,15 @@ export default {
           this.commitsData.commits[i].name
         ) {
           this.log = this.post.data.commits[i].log;
+          if (this.post.data.commits[i].testLog === "") {
+            this.testLog = "No test log available, compile failed.";
+          } else {
+            this.testLog = this.post.data.commits[i].testLog;
+          }
           this.compilePassed = this.post.data.commits[i].compilePass;
           this.testPassed = this.post.data.commits[i].testPass;
+          this.commitTime = this.post.data.commits[i].time;
+          this.commitURL = this.post.data.commits[i].commitURL;
         }
       }
     },
@@ -180,6 +219,7 @@ export default {
       for (let i = 0; i < this.post.data.commits.length; i++) {
         this.commits[i] = this.post.data.commits[i].name.slice(0, -5);
       }
+      this.commits.reverse();
     },
   },
 };
