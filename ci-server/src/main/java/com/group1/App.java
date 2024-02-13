@@ -519,19 +519,20 @@ public class App extends AbstractHandler {
      *         if no match is found or an error occurs during parsing.
      */
     public int getTestFailures(String testOutput) {
-        String regex = "Tests run: \\d+, Failures: \\d+, Errors: (\\d+), Skipped: \\d+";
+        
+        String regex = "Tests run: \\d+, Failures: (\\d+), Errors: (\\d+), Skipped: \\d+";
+
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(testOutput);
-
+        int failures = -1;
         while (matcher.find()) {
             try {
-                return Integer.parseInt(matcher.group(1));
+              failures= Integer.parseInt(matcher.group(1))+Integer.parseInt(matcher.group(2));
             } catch (NumberFormatException e) {
                 // do nothing
             }
-        }
-
-        return -1;
+         }
+        return failures;
     }
 
     // TODO: add documentation
