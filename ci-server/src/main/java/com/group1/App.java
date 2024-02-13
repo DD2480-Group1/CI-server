@@ -207,10 +207,17 @@ public class App extends AbstractHandler {
         // otherwise, request should not be handled
         if (baseRequest.getContentLength() == 0 || body == null || body.length() == 0) {
             System.out.println("NO REQUEST!");
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
         // parse request data
         JSONObject payload = parseJSON(body.toString());
+        // handle if JSON object is empyt => the POST json was bad!
+        if (payload.isEmpty()) {
+            System.out.println("NO REQUEST!");
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
 
         // extract GitHub data from POST request
         JSONObject repositoryJSON = (JSONObject) payload.get("repository");
