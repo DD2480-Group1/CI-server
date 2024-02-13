@@ -400,7 +400,7 @@ public class App extends AbstractHandler {
 
         // shell command used, using maven to compile repository
         // skip the test, we only want to compile
-        String[] command = { "mvn", "clean", "install", "-DskipTests" };
+        String[] command = { "mvn", "clean", "install", "-DskipTests", "-B" };
         File workingFile = new File(repoDir, "ci-server");
         String output = runCommand(command, workingFile);
 
