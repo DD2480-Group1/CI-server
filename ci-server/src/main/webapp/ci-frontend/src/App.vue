@@ -122,11 +122,17 @@ export default {
         typeof this.selectedRepo !== "undefined" &&
         typeof this.selectedCommit !== "undefined"
       ) {
+        console.log(
+          this.selectedRepo,
+          this.selectedBranch,
+          this.selectedCommit
+        );
         this.fetch();
       }
     },
     showData() {
-      for (let i = 0; i < this.commits.length; i++) {
+      console.log(this.commitsData.commits);
+      for (let i = 0; i < this.commitsData.commits.length; i++) {
         if (
           this.selectedCommit + ".json" ===
           this.commitsData.commits[i].name
@@ -149,7 +155,6 @@ export default {
       );
       // remove .json
       for (let i = 0; i < this.post.data.commits.length; i++) {
-        console.log(this.post.data.commits[i].name);
         this.commits[i] = this.post.data.commits[i].name.slice(0, -5);
       }
       this.showData();
@@ -175,7 +180,6 @@ export default {
           this.selectedBranch
       );
       this.commitsData = this.post.data;
-      console.log(this.commitsData);
       // remove .json
       for (let i = 0; i < this.post.data.commits.length; i++) {
         this.commits[i] = this.post.data.commits[i].name.slice(0, -5);
