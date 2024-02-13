@@ -45,3 +45,10 @@ buildNumber.properties
 .vscode/
 .idea/
 .cache/
+
+ngrok*
+# MaxOX
+**/.DS_Store
+
+# Hide github secret token
+secret/
