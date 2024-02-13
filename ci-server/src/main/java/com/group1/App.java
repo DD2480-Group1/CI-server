@@ -42,8 +42,7 @@ import org.json.simple.JSONArray;
 
 public class App extends AbstractHandler {
     private static final int PORT = 8080;
-    // TODO: link to real website
-    private static final String CI_FRONTEND_URL = "https://www.google.se/?hl=sv";
+    private static final String CI_FRONTEND_URL = "https://skylark-fresh-whale.ngrok-free.app"; //"https://www.google.se/?hl=sv";
 
     // TODO: add function description
     public void handle(String target,
@@ -290,15 +289,12 @@ public class App extends AbstractHandler {
             System.err.println("[ERROR] FAILED to CLONE repository...");
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CompileException e) {
             createCommitStatus(repositoryFullName, commitSHA, "error", token, "compile failed");
+            // set compile state to false if compile failed
             compileState = false;
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            createCommitStatus(repositoryFullName, commitSHA, "error", token, "CI server was interrupted");
-            System.err.println("[ABORT] repository compile INTERRUPTED.");
-            compileState = false;
-            e.printStackTrace();
-        }
+        } 
         // if this error is reached, we failed to create a commit status, so do not try
         // to do it again
         catch (Exception e) {
@@ -391,15 +387,18 @@ public class App extends AbstractHandler {
      * @throws InterruptedException
      */
     public static String compileRepository(File repoDir)
-            throws IOException, InterruptedException {
+            throws CompileException {
 
         // shell command used, using maven to compile repository
         // skip the test, we only want to compile
         String[] command = { "mvn", "clean", "install", "-DskipTests", "-B" };
         File workingFile = new File(repoDir, "ci-server");
-        String output = runCommand(command, workingFile);
-
-        return output;
+        try {
+            String output = runCommand(command, workingFile);
+            return output;
+        } catch (Exception e) {
+            throw new CompileException("[ERROR] Failed to compile project", e);
+        }
     }
 
     // TODO: add documentation
@@ -642,6 +641,16 @@ public class App extends AbstractHandler {
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
+        }
+    }
+
+    static class CompileException extends Exception {
+        public CompileException(String message) {
+            super(message);
+        }
+
+        public CompileException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }
