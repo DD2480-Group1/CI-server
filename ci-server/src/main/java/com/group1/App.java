@@ -135,13 +135,16 @@ public class App extends AbstractHandler {
             JSONArray commitList = new JSONArray();
             for (String commit : commits) {
                 JSONObject commitObj = new JSONObject();
-                commitObj.put("name", commit);
-                commitObj.put("branch", "test-branch");
-                commitObj.put("commit", "123345");
-                commitObj.put("log", "commit log\n\n hahaha");
-                commitObj.put("compilePassed", "1");
-                commitObj.put("testPassed", "2");
+                JSONParser parser = new JSONParser();
+                File commitFile = new File("data/" + repo + "/" + branch + "/" + commit);
+                try {
+                    JSONObject commitData = (JSONObject) parser
+                            .parse(new String(Files.readAllBytes(commitFile.toPath())));
 
+                } catch (org.json.simple.parser.ParseException e) {
+                    e.printStackTrace();
+                }
+                commitObj.put("name", commit);
                 commitList.add(commitObj);
             }
 
