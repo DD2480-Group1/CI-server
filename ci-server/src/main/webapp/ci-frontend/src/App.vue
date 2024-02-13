@@ -30,7 +30,7 @@
             label="Commit"
             v-model="selectedCommit"
             @click="getCommit"
-            @input="fetch"
+            @update:model-value="showData"
           ></v-select>
         </div>
       </v-col>
@@ -83,7 +83,7 @@
 </template>
 <script>
 // import the serverUrl from URL config
-import { serverUrl } from '../../URLconfig';
+import { serverUrl } from "../../URLconfig";
 
 import axios from "axios";
 export default {
@@ -91,6 +91,7 @@ export default {
     commits: [
       // "commit1",
     ],
+    commitsData: null,
     selectedCommit: "",
     branches: [
       //  "bugfix",
@@ -105,60 +106,80 @@ export default {
     compilePassed: 0, // 0: not tested, 1: passed, 2: failed
     testPassed: 0, // 0: not tested, 1: passed, 2: failed
     post: null,
+    // API_URL: "http://localhost:8080/ci/api/",
+    API_URL: `${serverUrl}/ci/api/`,
+    //    API_URL: "https://formally-quick-krill.ngrok-free.app/ci/api/",
   }),
 
+  created() {
+    this.fetchData();
+  },
+
+  watch: { $route: "fetchData" },
   methods: {
-    // refresh() {
-    //   console.log("refreshing...");
-    //   this.log += "refreshing...\n";
-    //   this.compilePassed = (this.compilePassed + 1) % 3;
-    // },
-
-    fetch() {
-      console.log("fetching...");
-      this.log += "fetching...\n";
-      this.testPassed = (this.testPassed + 1) % 3;
+    fetchData() {
+      this.selectedBranch = this.$route.query.branch;
+      this.selectedRepo = this.$route.query.repo;
+      this.selectedCommit = this.$route.query.commit;
+      if (
+        typeof this.selectedBranch !== "undefined" &&
+        typeof this.selectedRepo !== "undefined" &&
+        typeof this.selectedCommit !== "undefined"
+      ) {
+        this.fetch();
+      }
     },
-
-    async getRepo() {
-      // this.post = await axios.get(
-      // "https://formally-quick-krill.ngrok-free.app/ci/api/repo"
-      // );
-      // console.log(`${serverUrl}/ci/api/repo`);
-      this.post = await axios.get(`${serverUrl}/ci/api/repo`);
-      this.repositories = this.post.data.repos;
+    showData() {
+      for (let i = 0; i < this.commitsData.commits.length; i++) {
+        if (
+          this.selectedCommit + ".json" ===
+          this.commitsData.commits[i].name
+        ) {
+          this.log = this.post.data.commits[i].log;
+          this.compilePassed = this.post.data.commits[i].compilePass;
+          this.testPassed = this.post.data.commits[i].testPass;
+        }
+      }
     },
-
-    async getBranch() {
-      // this.post = await axios.get(
-      // "https://formally-quick-krill.ngrok-free.app/ci/api/build/?repo=" +
-      // this.repositories[0]
-      // );
+    async fetch() {
       this.post = await axios.get(
-        `${serverUrl}/ci/api/branch/?repo=` + this.selectedRepo
-      );
-      this.branches = this.post.data.branches;
-    },
-
-    async getCommit() {
-      // this.post = await axios.get(
-      // "https://formally-quick-krill.ngrok-free.app/ci/api/build/?repo=" +
-      // this.repositories[0] +
-      // "&branch=" +
-      // this.branches[0]
-      // );
-      this.post = await axios.get(
-        `${serverUrl}/ci/api/commit/?repo=` +
+        this.API_URL +
+          "commit/?repo=" +
           this.selectedRepo +
           "&branch=" +
           this.selectedBranch
       );
       // remove .json
       for (let i = 0; i < this.post.data.commits.length; i++) {
-        // this.commits[i] = this.post.data.name[i].slice(0, -5);
         this.commits[i] = this.post.data.commits[i].name.slice(0, -5);
       }
-      console.log(this.post.data);
+      this.showData();
+    },
+    async getRepo() {
+      this.post = await axios.get(this.API_URL + "repo");
+      this.repositories = this.post.data.repos;
+    },
+
+    async getBranch() {
+      this.post = await axios.get(
+        this.API_URL + "branch/?repo=" + this.selectedRepo
+      );
+      this.branches = this.post.data.branches;
+    },
+
+    async getCommit() {
+      this.post = await axios.get(
+        this.API_URL +
+          "commit/?repo=" +
+          this.selectedRepo +
+          "&branch=" +
+          this.selectedBranch
+      );
+      this.commitsData = this.post.data;
+      // remove .json
+      for (let i = 0; i < this.post.data.commits.length; i++) {
+        this.commits[i] = this.post.data.commits[i].name.slice(0, -5);
+      }
     },
   },
 };

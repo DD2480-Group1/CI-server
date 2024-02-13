@@ -29,14 +29,16 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+
 // GIT
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
-import org.json.simple.JSONArray;
+
 // JSON
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.JSONArray;
 
 public class App extends AbstractHandler {
     private static final int PORT = 8080;
@@ -52,9 +54,6 @@ public class App extends AbstractHandler {
         // debug print
         System.out.println("Handling request: " + target);
         System.out.println("Method: " + baseRequest.getMethod());
-
-        // acknowledge webhook received with 202 status code
-        response.setStatus(HttpServletResponse.SC_ACCEPTED);
 
         if (target.startsWith("/api/repo")) {
             System.out.println("handling /api/repo");
@@ -109,7 +108,9 @@ public class App extends AbstractHandler {
                 }
             });
 
-            for (String branch : branches) {
+            for (
+
+            String branch : branches) {
                 list.add(branch);
             }
             obj.put("branches", list);
@@ -145,12 +146,24 @@ public class App extends AbstractHandler {
             JSONArray commitList = new JSONArray();
             for (String commit : commits) {
                 JSONObject commitObj = new JSONObject();
-                commitObj.put("name", commit);
-                commitObj.put("hash", "123345");
-                commitObj.put("log", "commit log\n\n hahaha");
-                commitObj.put("compilePass", "0");
-                commitObj.put("testPass", "0");
+                JSONParser parser = new JSONParser();
+                File commitFile = new File("data/" + repo + "/" + branch + "/" + commit);
+                try {
+                    JSONObject commitData = (JSONObject) parser
+                            .parse(new String(Files.readAllBytes(commitFile.toPath())));
+                    commitObj.put("sha", commitData.get("commit"));
+                    commitObj.put("compilePass", commitData.get("compilePass").toString() == "true" ? 1 : 2);
+                    commitObj.put("testPass", commitData.get("testPass").toString() == "true" ? 1 : 2);
+                    commitObj.put("log", commitData.get("log_compile"));
+                    commitObj.put("testLog", commitData.get("log_test"));
+                    commitObj.put("time", commitData.get("time"));
+                    commitObj.put("commit_message", commitData.get("commit_message"));
+                    commitObj.put("commitURL", commitData.get("commitURL"));
 
+                } catch (org.json.simple.parser.ParseException e) {
+                    e.printStackTrace();
+                }
+                commitObj.put("name", commit);
                 commitList.add(commitObj);
             }
 
@@ -240,9 +253,9 @@ public class App extends AbstractHandler {
             // get branch from request
             Git git = cloneRepository(repositoryURL, branch, token);
             System.out.println("CLONE SUCCESS, starting build, this may take a while...");
-            // notify GitHub 
+            // notify GitHub
             createCommitStatus(repositoryFullName, commitSHA, "pending", token, "compiling repo on server...");
-            
+
             // 2nd compile the code
             File repoDirectory = git.getRepository().getDirectory().getParentFile();
             compileOutput = compileRepository(repoDirectory);
@@ -276,19 +289,18 @@ public class App extends AbstractHandler {
         } catch (GitAPIException e) {
             System.err.println("[ERROR] FAILED to CLONE repository...");
             e.printStackTrace();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             createCommitStatus(repositoryFullName, commitSHA, "error", token, "compile failed");
             compileState = false;
             e.printStackTrace();
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             createCommitStatus(repositoryFullName, commitSHA, "error", token, "CI server was interrupted");
             System.err.println("[ABORT] repository compile INTERRUPTED.");
             compileState = false;
             e.printStackTrace();
         }
-        // if this error is reached, we failed to create a commit status, so do not try to do it again
+        // if this error is reached, we failed to create a commit status, so do not try
+        // to do it again
         catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -299,14 +311,14 @@ public class App extends AbstractHandler {
 
             boolean testOutputState = testOutput != "";
             System.out.println("READ test data: " + testOutputState);
-            
+
             // save the data
             // extract branch name
             String[] parts = branch.split("heads/");
             String branchName = parts[1];
             // lastly save all data to a json-file
-            saveData(repositoryName, branchName, commitName, commitSHA, commitTimestamp, compileState, testState, 
-                compileOutput, testOutput, commitURL);
+            saveData(repositoryName, branchName, commitName, commitSHA, commitTimestamp, compileState, testState,
+                    compileOutput, testOutput, commitURL);
 
             System.out.println("CI-actions finnished");
         }
@@ -383,7 +395,7 @@ public class App extends AbstractHandler {
 
         // shell command used, using maven to compile repository
         // skip the test, we only want to compile
-        String[] command = { "mvn", "clean", "install", "-DskipTests" };
+        String[] command = { "mvn", "clean", "install", "-DskipTests", "-B" };
         File workingFile = new File(repoDir, "ci-server");
         String output = runCommand(command, workingFile);
 
@@ -405,21 +417,24 @@ public class App extends AbstractHandler {
     /**
      * Function to create and update commit status on GitHub. Used for notification.
      * The function establishes a connection to the GitHub API, and builds
-     * a POST request with information regarding the status of the commit on the CI server.
+     * a POST request with information regarding the status of the commit on the CI
+     * server.
      * 
-     * @param repoName the repositorys FULL name
-     * @param commitSHA the commit hash
-     * @param state the state of the commit, can be in four states see GitHub for more info.
-     * @param token secret access token to GitHub repository
-     * @param description additional information regarding the commit status, displayed on GitHub
+     * @param repoName    the repositorys FULL name
+     * @param commitSHA   the commit hash
+     * @param state       the state of the commit, can be in four states see GitHub
+     *                    for more info.
+     * @param token       secret access token to GitHub repository
+     * @param description additional information regarding the commit status,
+     *                    displayed on GitHub
      */
     public static void createCommitStatus(String repoName, String commitSHA, String state, String token,
-        String description) {
-        
+            String description) {
+
         try {
             // define URL to GitHub API
             URL apiURL = new URL("https://api.github.com/repos/" + repoName + "/statuses/" + commitSHA);
-            
+
             // create connection
             HttpURLConnection connection = (HttpURLConnection) apiURL.openConnection();
             // BUILD POST to send data to GitHub
@@ -437,7 +452,7 @@ public class App extends AbstractHandler {
             contentJSON.put("context", "CI server");
             contentJSON.put("description", description);
             contentJSON.put("target_url", CI_FRONTEND_URL);
-            
+
             String JSONString = contentJSON.toJSONString();
 
             // write JSON content to output stream
@@ -459,8 +474,7 @@ public class App extends AbstractHandler {
         } catch (IOException e) {
             System.err.println("[ERROR] Failed to open connection to GitHub API.");
             e.printStackTrace();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -468,10 +482,12 @@ public class App extends AbstractHandler {
     /**
      * Reads the GitHub access token from a secret file.
      * 
-     * @param filePath the file path for the secret token, should be in a text file under secret folder
+     * @param filePath the file path for the secret token, should be in a text file
+     *                 under secret folder
      * @return the GitHub token as a string
      * @throws IOException
      */
+
     public static String readToken(String filePath)
             throws IOException {
 
@@ -500,8 +516,8 @@ public class App extends AbstractHandler {
      *
      * @param testOutput The output from the mvn test function
      * @return The number of failed tests from the testoutput or -1
-     * if no match is found or an error occurs during parsing.
-     * */
+     *         if no match is found or an error occurs during parsing.
+     */
     public int getTestFailures(String testOutput) {
         String regex = "Tests run: \\d+, Failures: \\d+, Errors: (\\d+), Skipped: \\d+";
         Pattern pattern = Pattern.compile(regex);
@@ -547,20 +563,20 @@ public class App extends AbstractHandler {
      * into a JSON file. Used for the front-end website to view CI server history.
      * File is saved under ci-server > data
      * 
-     * @param repoName name of repository
-     * @param branch name of branch
-     * @param commit the commit message (title)
-     * @param commitSHA commit hash, unique
-     * @param time time of commit
+     * @param repoName    name of repository
+     * @param branch      name of branch
+     * @param commit      the commit message (title)
+     * @param commitSHA   commit hash, unique
+     * @param time        time of commit
      * @param compilePass if commit passed compile on CI server
-     * @param testPass if commit passed CI server unit tests
-     * @param logCompile console results from compile
-     * @param logTest console results from tests
-     * @param commitURL the git URL for the commit
+     * @param testPass    if commit passed CI server unit tests
+     * @param logCompile  console results from compile
+     * @param logTest     console results from tests
+     * @param commitURL   the git URL for the commit
      */
     private void saveData(String repoName, String branch, String commit, String commitSHA, String time,
-        boolean compilePass, boolean testPass, String logCompile, String logTest, String commitURL) {
-        
+            boolean compilePass, boolean testPass, String logCompile, String logTest, String commitURL) {
+
         // create directory structure if it does not exist
         File dir = new File("data/" + repoName + "/" + branch);
         if (!dir.exists()) {
@@ -571,20 +587,20 @@ public class App extends AbstractHandler {
         int commitNumber = dir.listFiles().length + 1;
 
         JSONObject commitObj = new JSONObject();
-        commitObj.put("number", commitNumber);      // what order the commit is in 
-        commitObj.put("repo", repoName);            // name of repository
-        commitObj.put("branch", branch);            // name of branch
-        commitObj.put("commit", commitSHA);         // commit hash, unique
-        commitObj.put("commit_message", commit);    // the commit message (title)
-        commitObj.put("time", time);                // time of commit
-        commitObj.put("compilePass", compilePass);  // if commit passed compile on CI server
-        commitObj.put("testPass", testPass);        // if commit passed CI server unit tests
-        commitObj.put("log_compile", logCompile);   // console results from compile
-        commitObj.put("log_test", logTest);         // console results from tests
-        commitObj.put("commitURL", commitURL);      // the git URL for the commit
+        commitObj.put("number", commitNumber); // what order the commit is in
+        commitObj.put("repo", repoName); // name of repository
+        commitObj.put("branch", branch); // name of branch
+        commitObj.put("commit", commitSHA); // commit hash, unique
+        commitObj.put("commit_message", commit); // the commit message (title)
+        commitObj.put("time", time); // time of commit
+        commitObj.put("compilePass", compilePass); // if commit passed compile on CI server
+        commitObj.put("testPass", testPass); // if commit passed CI server unit tests
+        commitObj.put("log_compile", logCompile); // console results from compile
+        commitObj.put("log_test", logTest); // console results from tests
+        commitObj.put("commitURL", commitURL); // the git URL for the commit
 
         // set file name as combination of commit order and commit SHA
-        // the largest number is the latest commit, 
+        // the largest number is the latest commit,
         // commit SHA ensures an unique name ALWAYS
         String fileName = "#" + commitNumber + " - " + commitSHA;
         // write JSON object to file
