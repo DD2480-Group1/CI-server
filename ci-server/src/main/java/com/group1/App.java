@@ -42,9 +42,8 @@ import org.json.simple.JSONArray;
 
 public class App extends AbstractHandler {
     private static final int PORT = 8080;
-    private static final String CI_FRONTEND_URL = "https://skylark-fresh-whale.ngrok-free.app"; //"https://www.google.se/?hl=sv";
+    private static final String CI_FRONTEND_URL = "https://skylark-fresh-whale.ngrok-free.app"; // "https://www.google.se/?hl=sv";
 
-    // TODO: add function description
     public void handle(String target,
             Request baseRequest,
             HttpServletRequest request,
@@ -301,7 +300,7 @@ public class App extends AbstractHandler {
             createCommitStatus(repositoryFullName, commitSHA, "error", token, "compile failed");
             // set compile state to false if compile failed
             compileState = false;
-        } 
+        }
         // if this error is reached, we failed to create a commit status, so do not try
         // to do it again
         catch (Exception e) {
@@ -353,7 +352,15 @@ public class App extends AbstractHandler {
                 .call();
     }
 
-    // TODO: add documentation
+    /**
+     * Function to run shell commands in Java. Uses ProcessBuilder to execute shell
+     * 
+     * @param command the command to be executed
+     * @param file    the working directory
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public static String runCommand(String[] command, File file)
             throws IOException, InterruptedException {
 
@@ -408,7 +415,14 @@ public class App extends AbstractHandler {
         }
     }
 
-    // TODO: add documentation
+    /**
+     * Run tests function uses ProcessBuilder to execture shell commands in Java.
+     * 
+     * @param repoDir location of the repository directory locally on the server
+     * @return the output from the test
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public static String runTests(File repoDir)
             throws IOException, InterruptedException {
 
@@ -525,7 +539,7 @@ public class App extends AbstractHandler {
      *         if no match is found or an error occurs during parsing.
      */
     public int getTestFailures(String testOutput) {
-        
+
         String regex = "Tests run: \\d+, Failures: (\\d+), Errors: (\\d+), Skipped: \\d+";
 
         Pattern pattern = Pattern.compile(regex);
@@ -533,15 +547,20 @@ public class App extends AbstractHandler {
         int failures = -1;
         while (matcher.find()) {
             try {
-              failures= Integer.parseInt(matcher.group(1))+Integer.parseInt(matcher.group(2));
+                failures = Integer.parseInt(matcher.group(1)) + Integer.parseInt(matcher.group(2));
             } catch (NumberFormatException e) {
                 // do nothing
             }
-         }
+        }
         return failures;
     }
 
-    // TODO: add documentation
+    /**
+     * Function to read the request body from the POST request from GitHub
+     * 
+     * @param baseRequest the request object
+     * @return the request body as a StringBuilder
+     */
     private StringBuilder readRequest(Request baseRequest) {
         try {
             BufferedReader contentReader = new BufferedReader(baseRequest.getReader());
@@ -658,6 +677,7 @@ public class App extends AbstractHandler {
     static class CompileException extends Exception {
         /**
          * Constructor to create compile exception with custom message
+         * 
          * @param message Message to be displayed
          */
         public CompileException(String message) {
@@ -665,9 +685,11 @@ public class App extends AbstractHandler {
         }
 
         /**
-         * Constructor to create compile exception with custom message and throwable cause
+         * Constructor to create compile exception with custom message and throwable
+         * cause
+         * 
          * @param message Message to be displayed
-         * @param cause Represents underlying reason why error was thrown
+         * @param cause   Represents underlying reason why error was thrown
          */
         public CompileException(String message, Throwable cause) {
             super(message, cause);
