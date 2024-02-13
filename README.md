@@ -1,5 +1,11 @@
 # assignment-2
 
+## Description
+
+This is a continuous integration server that is designed to be used with a GitHub repository. The server will be able to receive webhooks from GitHub and run tests on the repository. The server will also be able to send notifications to the repository owner about the status of the tests.
+
+A frontend is implemented to allow the user to view the status of the tests and the logs of the tests. The frontend is implemented using vue and the backend is implemented using jetty server.
+
 ## Prerequisites
 
 * Java version 11 or higher
