@@ -386,12 +386,7 @@ public class App extends AbstractHandler {
      * Java.
      * Compiles the repository and catches any errors.
      * 
-     * <<<<<<< HEAD
-     * 
-     * @param repoDir
-     *                =======
      * @param repoDir location of the repository directory locally on the server
-     *                >>>>>>> origin/main
      * @throws IOException
      * @throws InterruptedException
      */
