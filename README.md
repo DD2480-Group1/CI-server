@@ -1,29 +1,55 @@
 # assignment-2
 
 ## Prerequisites
-* Java version 11 or higher 
+
+* Java version 11 or higher
 * Maven
+* Ngrok (optional)
 
 ## How To Build
+
 ```
-mvn package
+bash build.sh
 ```
 
-## How to Run and Test Build
+## How to Run
+
 ```
-mvn exec:java -D exec.mainClass=com.group1.App
+bash launch.sh
 ```
 
-## How Run Server
+## Use ngrok to expose the server to the internet
+
 ```
-TODO: add description
+ngrok http --domain=<your-ngrok.domain> 8080
 ```
 
-## Commit Structure for assignment-2 
+## How to Test
+
+```bash
+cd ci-server
+mvn test
+```
+
+## Generate Documentation
+
+```bash
+cd ci-server
+mvn javadoc:javadoc
+```
+
+The documentation will be generated in the `target/site/apidocs` directory and the dependencies in the `target/site` directory.
+
+## Implementation Details
+
+### Notification
+
+## Commit Structure for assignment-2
 
 Each commit message should consist of a subject and a body. Please follow this message structure when committing to the project:
 
 **Subject**
+
 * The first line (the title) is the subject and should contain imperative language, present tense: "Fix bug" not "Fixed bug".
 * The subject should also start with a capital letter, not end on a period and be less than fifty characters.
 * Prefix is not required as long as the subject summarizes the change itself.
@@ -31,6 +57,7 @@ Each commit message should consist of a subject and a body. Please follow this m
 After the subject, a blank line should be made followed by the body.
 
 **Body**
+
 * The body should also use imperative language: "Fix missing" instead of "Fixed missing" or "Fixes missing".
 * When possible, use punctuation and capital letters where appropriate.
 * Lines should not exceed 72 characters, except when including compiler error messages.
@@ -40,6 +67,7 @@ After the subject, a blank line should be made followed by the body.
 * Use "Fixes" for bugs and "Closes" for general issues.
 
 Here is an example of a good commit:
+
 ```
 Add missing import of 'gtest' in src/decide.cpp
 
@@ -51,3 +79,15 @@ Fix introduced by adding 'gtest' module to CMakeList.txt.
 Fixes #1002
 Closes #64
 ```
+
+## Statement of Contributions
+
+Ahmed:
+
+ZOU Hetai (Ed):
+
+Elliot:
+
+Yening:
+
+## Essence
