@@ -149,6 +149,9 @@ export default {
 
   watch: { $route: "fetchData" },
   methods: {
+    /**
+     * Fetch data from the server when the page is loaded
+     */
     fetchData() {
       this.selectedBranch = this.$route.query.branch;
       this.selectedRepo = this.$route.query.repo;
@@ -161,6 +164,10 @@ export default {
         this.fetch();
       }
     },
+
+    /**
+     * Show the data of the selected commit by updating the component's data
+     */
     showData() {
       for (let i = 0; i < this.commitsData.commits.length; i++) {
         if (
@@ -180,6 +187,10 @@ export default {
         }
       }
     },
+
+    /**
+     * Fetch data from the server
+     */
     async fetch() {
       this.post = await axios.get(
         this.API_URL +
@@ -194,11 +205,17 @@ export default {
       }
       this.showData();
     },
+    /**
+     * Fetch the repositories info from the server
+     */
     async getRepo() {
       this.post = await axios.get(this.API_URL + "repo");
       this.repositories = this.post.data.repos;
     },
 
+    /**
+     * Fetch the branches info from the server
+     */
     async getBranch() {
       this.post = await axios.get(
         this.API_URL + "branch/?repo=" + this.selectedRepo
@@ -206,6 +223,9 @@ export default {
       this.branches = this.post.data.branches;
     },
 
+    /**
+     * Fetch the commits info from the server
+     */
     async getCommit() {
       this.post = await axios.get(
         this.API_URL +
