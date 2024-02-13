@@ -586,7 +586,7 @@ public class App extends AbstractHandler {
         // set file name as combination of commit order and commit SHA
         // the largest number is the latest commit, 
         // commit SHA ensures an unique name ALWAYS
-        String fileName = commitNumber + " " + commitSHA;
+        String fileName = "#" + commitNumber + " - " + commitSHA;
         // write JSON object to file
         try (FileWriter file = new FileWriter(dir.getPath() + "/" + fileName + ".json")) {
             file.write(commitObj.toJSONString());
