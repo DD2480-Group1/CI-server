@@ -88,7 +88,7 @@ Closes #64
 
 ## Statement of Contributions
 
-Ahmed:
+Hannes
 
 ZOU Hetai (Ed):
 
