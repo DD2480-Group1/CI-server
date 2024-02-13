@@ -151,7 +151,15 @@ public class App extends AbstractHandler {
                 try {
                     JSONObject commitData = (JSONObject) parser
                             .parse(new String(Files.readAllBytes(commitFile.toPath())));
-                    
+                    commitObj.put("sha", commitData.get("commit"));
+                    commitObj.put("compilePass", commitData.get("compilePass").toString() == "true" ? 1 : 2);
+                    commitObj.put("testPass", commitData.get("testPass").toString() == "true" ? 1 : 2);
+                    commitObj.put("log", commitData.get("log_compile"));
+                    commitObj.put("testLog", commitData.get("log_test"));
+                    commitObj.put("time", commitData.get("time"));
+                    commitObj.put("commit_message", commitData.get("commit_message"));
+                    commitObj.put("commitURL", commitData.get("commitURL"));
+
                 } catch (org.json.simple.parser.ParseException e) {
                     e.printStackTrace();
                 }

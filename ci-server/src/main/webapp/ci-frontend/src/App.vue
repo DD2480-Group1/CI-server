@@ -126,26 +126,18 @@ export default {
         typeof this.selectedRepo !== "undefined" &&
         typeof this.selectedCommit !== "undefined"
       ) {
-        console.log(
-          this.selectedRepo,
-          this.selectedBranch,
-          this.selectedCommit
-        );
         this.fetch();
       }
     },
     showData() {
-      console.log(this.commitsData.commits);
       for (let i = 0; i < this.commitsData.commits.length; i++) {
         if (
           this.selectedCommit + ".json" ===
           this.commitsData.commits[i].name
         ) {
-          console.log(this.commitsData.commits[i]);
-          console.log(this.post.data.commits[i]);
           this.log = this.post.data.commits[i].log;
-          this.compilePassed = this.post.data.commits[i].compilePassed;
-          this.testPassed = this.post.data.commits[i].testPassed;
+          this.compilePassed = this.post.data.commits[i].compilePass;
+          this.testPassed = this.post.data.commits[i].testPass;
         }
       }
     },
