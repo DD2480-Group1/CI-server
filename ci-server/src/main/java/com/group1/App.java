@@ -44,6 +44,18 @@ public class App extends AbstractHandler {
     private static final int PORT = 8080;
     private static final String CI_FRONTEND_URL = "https://skylark-fresh-whale.ngrok-free.app"; // "https://www.google.se/?hl=sv";
 
+    /**
+     * Handles the request from the client
+     * 
+     * @param target      the target of the request
+     * @param baseRequest the original unwrapped request object
+     * @param request     the request either as the Request object or a wrapper of
+     *                    that request
+     * @param response    the response as the Response object or a wrapper of that
+     *                    request
+     * @throws IOException      if an I/O error occurs
+     * @throws ServletException if a servlet-specific error occurs
+     */
     public void handle(String target,
             Request baseRequest,
             HttpServletRequest request,
@@ -53,12 +65,15 @@ public class App extends AbstractHandler {
         System.out.println("Handling request: " + target);
         System.out.println("Method: " + baseRequest.getMethod());
 
+        // handle API requests from the front end
+        // get all repos name lists
         if (target.startsWith("/api/repo")) {
             System.out.println("handling /api/repo");
             response.setContentType("application/json;charset=utf-8");
             response.setStatus(HttpServletResponse.SC_OK);
             baseRequest.setHandled(true);
 
+            // add to JSON object for all name
             JSONObject obj = new JSONObject();
             JSONArray list = new JSONArray();
 
@@ -78,10 +93,13 @@ public class App extends AbstractHandler {
 
             return;
         }
+
+        // get all branches for a specific repo
         if (target.startsWith("/api/branch")) {
             System.out.println("handling /api/branch");
             String repo = request.getParameter("repo");
             if (repo.equals("")) {
+                // if no repo is given, return empty list and give bad request
                 response.setContentType("application/json;charset=utf-8");
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 JSONObject obj = new JSONObject();
@@ -99,8 +117,8 @@ public class App extends AbstractHandler {
             JSONObject obj = new JSONObject();
             JSONArray list = new JSONArray();
 
+            // filter out all directories in the repo folder
             String[] branches = new File("data/" + repo).list(new FilenameFilter() {
-
                 public boolean accept(File dir, String name) {
                     return new File(dir, name).isDirectory();
                 }
@@ -118,10 +136,13 @@ public class App extends AbstractHandler {
 
             return;
         }
+
+        // get all commits for a specific branch
         if (target.startsWith("/api/commit")) {
             System.out.println("handling /api/commit");
             String repo = request.getParameter("repo");
             String branch = request.getParameter("branch");
+            // if no repo or branch is given, return empty list and give bad request
             if (repo.equals("") || branch.equals("")) {
                 response.setContentType("application/json;charset=utf-8");
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -141,12 +162,14 @@ public class App extends AbstractHandler {
 
             String[] commits = new File("data/" + repo + "/" + branch).list();
 
+            // parse all commits and add to JSON object
             JSONArray commitList = new JSONArray();
             for (String commit : commits) {
                 JSONObject commitObj = new JSONObject();
                 JSONParser parser = new JSONParser();
                 File commitFile = new File("data/" + repo + "/" + branch + "/" + commit);
                 try {
+                    // retrieve relevant data from the commit file
                     JSONObject commitData = (JSONObject) parser
                             .parse(new String(Files.readAllBytes(commitFile.toPath())));
                     commitObj.put("sha", commitData.get("commit"));
@@ -193,6 +216,15 @@ public class App extends AbstractHandler {
 
     /**
      * Handles the webhook request from Github
+     * 
+     * @param target      the target of the request
+     * @param baseRequest the original unwrapped request object
+     * @param request     the request either as the Request object or a wrapper of
+     *                    that request
+     * @param response    the response as the Response object or a wrapper of that
+     *                    request
+     * @throws IOException      if an I/O error occurs
+     * @throws ServletException if a servlet-specific error occurs
      */
     public void handleWebhook(String target,
             Request baseRequest,
