@@ -180,7 +180,7 @@ public class App extends AbstractHandler {
         // TODO: add handling for other cases
 
         response.setContentType("text/html;charset=utf-8");
-        response.setStatus(HttpServletResponse.SC_OK);
+        // response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
 
         try {
@@ -204,6 +204,7 @@ public class App extends AbstractHandler {
         StringBuilder body = readRequest(baseRequest);
         // check if the body of the request is not zero
         // otherwise, request should not be handled
+        
         if (baseRequest.getContentLength() == 0 || body == null || body.length() == 0) {
             System.out.println("NO REQUEST!");
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -323,7 +324,7 @@ public class App extends AbstractHandler {
             saveData(repositoryName, branchName, commitName, commitSHA, commitTimestamp, compileState, testState,
                     compileOutput, testOutput, commitURL);
 
-            System.out.println("CI-actions finnished");
+            System.out.println("CI-actions finnished\n");
         }
     }
 
@@ -380,7 +381,7 @@ public class App extends AbstractHandler {
         while ((line = reader.readLine()) != null) {
             output.append(line + "\n");
         }
-        System.out.println(output.toString());
+        // System.out.println(output.toString());
         // wait for exit
         int exit = process.waitFor();
 

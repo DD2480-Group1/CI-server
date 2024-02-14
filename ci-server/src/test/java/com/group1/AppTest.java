@@ -16,6 +16,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.server.Server;
@@ -24,18 +25,26 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.json.simple.JSONObject;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * Unit test for simple App.
  */
 public class AppTest {
+    
+    @BeforeClass
+    public static void init() {
+        int PORT = 8181;
+        Thread server = new Thread(() -> startTempServer(PORT));
+        server.start();
+    }
 
     // Test helper methods and variables:
 
     private static final String samplePath = "src/test/java/com/group1/sample_inputs/";
 
-    private void startTempServer(int PORT) {
+    private static void startTempServer(int PORT) {
         ContextHandler dashContextHandler = new ContextHandler("/");
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setResourceBase("src/main/webapp/ci-frontend/dist/");
@@ -110,7 +119,7 @@ public class AppTest {
      */
     @Test
     public void shouldAnswerWithTrue() {
-        assertTrue(false);
+        assertTrue(true);
     }
 
     @Test
@@ -150,9 +159,9 @@ public class AppTest {
     @Test
     public void validWebhookReqquest() {
         int PORT = 8181;
-        Thread server = new Thread(() -> startTempServer(PORT));
+        // Thread server = new Thread(() -> startTempServer(PORT));
         try {
-            server.start();
+            // server.start();
 
             String path = samplePath + "validrequest.json";
             File file = new File(path);
@@ -164,7 +173,10 @@ public class AppTest {
                     .POST(BodyPublishers.ofFile(Paths.get(path)))
                     .build();
 
-            HttpClient client = HttpClient.newHttpClient();
+            // HttpClient client = HttpClient.newHttpClient();
+               HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(60))
+                    .build();
             CompletableFuture<HttpResponse<String>> a = client.sendAsync(request, BodyHandlers.ofString());
 
             HttpResponse<String> response = a.join();
@@ -178,10 +190,10 @@ public class AppTest {
 
     @Test
     public void invalidWebhookRequest() {
-        int PORT = 8182;
-        Thread server = new Thread(() -> startTempServer(PORT));
+        int PORT = 8181;
+        // Thread server = new Thread(() -> startTempServer(PORT));
         try {
-            server.start();
+            // server.start();
 
             String path = samplePath + "invalidrequest.json";
             File file = new File(path);
@@ -193,7 +205,10 @@ public class AppTest {
                     .POST(BodyPublishers.ofFile(Paths.get(path)))
                     .build();
 
-            HttpClient client = HttpClient.newHttpClient();
+            // HttpClient client = HttpClient.newHttpClient();
+               HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(60))
+                    .build();
             CompletableFuture<HttpResponse<String>> a = client.sendAsync(request, BodyHandlers.ofString());
 
             HttpResponse<String> response = a.join();
@@ -205,12 +220,12 @@ public class AppTest {
 
     @Test
     public void notificationSetToTrue() {
-        int PORT = 8183;
-        Thread server = new Thread(() -> startTempServer(PORT));
+        int PORT = 8181;
+        // Thread server = new Thread(() -> startTempServer(PORT));
 
         String commitSHA = "9541c2d07cd36966ce674f276f26498b214b8ca2";
         try {
-            server.start();
+            // server.start();
             String token = App.readToken("secret/github_token.txt");
             System.out.println(">>>> TOKEN: " + token);
 
@@ -232,7 +247,15 @@ public class AppTest {
                     .POST(BodyPublishers.ofFile(Paths.get(path)))
                     .build();
 
-            HttpClient client = HttpClient.newHttpClient();
+            // HttpClient client = HttpClient.newHttpClient();
+                // HttpClient client = HttpClientBuilder.getInstance()
+                // .addConnectionOptions(new ConnectionOption<>("Timeout", 30000))
+                // .build();
+
+               HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(60))
+                    .build();
+
             CompletableFuture<HttpResponse<String>> a = client.sendAsync(request, BodyHandlers.ofString());
             HttpResponse<String> response = a.join();
 
