@@ -129,7 +129,11 @@ Elliot:
 * Wrote Essence.
 
 Hannes:
-* TODO
+* Worked on some backend features related to handling webhooks and handling http requests.
+* Implemented some helper functions like parseJSON and getTestFailures.
+* Worked on settings up tests for the server.
+* General debugging of the backend
+* Contributed to managing issues and reviewing pull requests.
 
 Yening:
 * TODO
