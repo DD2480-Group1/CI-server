@@ -257,6 +257,7 @@ public class App extends AbstractHandler {
             // 1st clone your repository
             // get branch from request
             Git git = cloneRepository(repositoryURL, branch, token);
+            git.checkout().setCreateBranch(true).setName("new-branch").setStartPoint(commitSHA).call();
             System.out.println("CLONE SUCCESS, starting build, this may take a while...");
             // notify GitHub
             createCommitStatus(repositoryFullName, commitSHA, "pending", token, "compiling repo on server...");
