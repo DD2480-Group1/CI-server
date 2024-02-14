@@ -4,8 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
@@ -55,6 +59,50 @@ public class AppTest {
             e.printStackTrace();
             System.exit(1);
         }
+    }
+
+    public static String getCommitStatus(String repoName, String commitSHA, String token) {
+        try {
+            // define URL to GitHub API
+            URL apiURL = new URL("https://api.github.com/repos/" + repoName + "/commits/" + commitSHA + "/status");
+
+            // https://api.github.com/repos/OWNER/REPO/commits/REF/status
+
+            // create connection
+            HttpURLConnection connection = (HttpURLConnection) apiURL.openConnection();
+            // BUILD POST to send data to GitHub
+            // set request method to POST
+            connection.setRequestMethod("GET");
+            // set authorization header with the token, allow us to have access
+            connection.setRequestProperty("Authorization", "token " + token);
+            // set the content type to JSON
+            connection.setRequestProperty("Content-Type", "application/json");
+            // enable output
+            connection.setDoOutput(true);
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+            StringBuilder response = new StringBuilder();
+            String line;
+
+            line = reader.readLine();
+
+            System.out.println("CONTENT");
+            while (line != null) {
+                response.append(line);
+                line = reader.readLine();
+            }
+
+            // System.out.println(response.toString());
+
+            JSONObject body = App.parseJSON(response.toString());
+
+            return (String) body.get("state");
+
+        } catch (Exception e) {
+
+        }
+        return "";
     }
 
     /**
@@ -122,6 +170,7 @@ public class AppTest {
             HttpResponse<String> response = a.join();
             assertEquals(200, response.statusCode());
         } catch (Exception e) {
+            e.printStackTrace();
             Assert.fail("Test threw an exception and could not complete");
         }
 
@@ -152,6 +201,49 @@ public class AppTest {
         } catch (Exception e) {
             Assert.fail("Test threw an exception and could not complete");
         }
+    }
 
+    @Test
+    public void notificationSetToTrue() {
+        int PORT = 8183;
+        Thread server = new Thread(() -> startTempServer(PORT));
+        try {
+            server.start();
+            String token = App.readToken("secret/github_token.txt");
+            System.out.println(">>>> TOKEN: " + token);
+
+            App.createCommitStatus("DD2480-Group1/CI-server", "a3175ea9c0c709756dae28f33705651342ab6e8d", "failure",
+                    token, "no description");
+
+            String status = getCommitStatus("DD2480-Group1/CI-server", "a3175ea9c0c709756dae28f33705651342ab6e8d",
+                    token);
+
+            assertTrue(status.equals("failure"));
+
+            String path = samplePath + "validrequest.json";
+            File file = new File(path);
+            path = file.getAbsolutePath();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://localhost:" + String.valueOf(PORT) + "/ci/"))
+                    .header("Content-Type", "application/json")
+                    .POST(BodyPublishers.ofFile(Paths.get(path)))
+                    .build();
+
+            HttpClient client = HttpClient.newHttpClient();
+            CompletableFuture<HttpResponse<String>> a = client.sendAsync(request, BodyHandlers.ofString());
+            HttpResponse<String> response = a.join();
+
+            status = getCommitStatus("DD2480-Group1/CI-server", "a3175ea9c0c709756dae28f33705651342ab6e8d", token);
+            System.out.println("STATUS SHOULD BE SUCCESS " + status);
+
+            assertTrue(status.equals("success"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // } catch(Exception e) {
+        // e.printStackTrace();
+        // Assert.fail("Test threw an exception and could not complete");
+        // }
     }
 }
