@@ -51,4 +51,4 @@ ngrok*
 **/.DS_Store
 
 # Hide github secret token
-secret/
+# secret/
