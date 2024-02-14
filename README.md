@@ -136,7 +136,7 @@ Hannes:
 * Contributed to managing issues and reviewing pull requests.
 
 Yening:
-* TODO
+* Contributed to bug fixining.
 
 ## Essence Team State
 Most of the points have been achieved with some exceptions. In *seeded* we have achieved most of the relevant points except `governance rules`.  The point `leadership structure` can be a bit debatable since we decided not to have any leader but rather a collaborative effort take on assignments. Looking at the next category, *formed*, we have struggled a bit with some of the points, like `all team members understand how to perform their work` because of switching tools from C++ and CMAKE to Java and Maven. But in general, the team has mostly fulfilled all the points with the exception being `external collaborators`, since there are none. In regard to *collaborating*, we have achieved all the points to differing degrees. We sit together parallel and work in parallel as well as actively book meetings and communicate via our discord server. *Performing* points such as no backtracking, duplicate work, and reworking have so far been achieved, with each feature only needing cases some minor bug fixes. However, `the team consistently meets its commitments` and `identifies and addresses problems` can be a bit debatable since development time can at times be slow. It is often that major features are mostly done, but there might have popped up some additional helper feature, required for the major feature to work, which slows down development. Lastly, the points in `adjourning` have not been fulfilled and do not seem relevant to this assignment. 
