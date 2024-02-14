@@ -207,15 +207,17 @@ public class AppTest {
     public void notificationSetToTrue() {
         int PORT = 8183;
         Thread server = new Thread(() -> startTempServer(PORT));
+
+        String commitSHA = "9541c2d07cd36966ce674f276f26498b214b8ca2";
         try {
             server.start();
             String token = App.readToken("secret/github_token.txt");
             System.out.println(">>>> TOKEN: " + token);
 
-            App.createCommitStatus("DD2480-Group1/CI-server", "a3175ea9c0c709756dae28f33705651342ab6e8d", "failure",
+            App.createCommitStatus("DD2480-Group1/CI-server", commitSHA, "failure",
                     token, "no description");
 
-            String status = getCommitStatus("DD2480-Group1/CI-server", "a3175ea9c0c709756dae28f33705651342ab6e8d",
+            String status = getCommitStatus("DD2480-Group1/CI-server",commitSHA,
                     token);
 
             assertTrue(status.equals("failure"));
@@ -234,7 +236,7 @@ public class AppTest {
             CompletableFuture<HttpResponse<String>> a = client.sendAsync(request, BodyHandlers.ofString());
             HttpResponse<String> response = a.join();
 
-            status = getCommitStatus("DD2480-Group1/CI-server", "a3175ea9c0c709756dae28f33705651342ab6e8d", token);
+            status = getCommitStatus("DD2480-Group1/CI-server", commitSHA, token);
             System.out.println("STATUS SHOULD BE SUCCESS " + status);
 
             assertTrue(status.equals("success"));
