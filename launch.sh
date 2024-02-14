@@ -1,4 +1,4 @@
 #!/bin/bash
 cd ci-server
-mvn package
+mvn package -DskipTests
 mvn exec:java -D exec.mainClass=com.group1.App
