@@ -5,6 +5,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
@@ -21,6 +22,11 @@ public class AppTest {
     @Test
     public void shouldAnswerWithTrue() {
         assertTrue(true);
+    }
+    
+    @Test
+    public void shouldAnswerWithFalse() {
+        assertFalse(false);
     }
 
     // Test that parseJSON successfully parses a simple
