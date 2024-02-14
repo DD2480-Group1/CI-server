@@ -257,6 +257,7 @@ public class App extends AbstractHandler {
             // 1st clone your repository
             // get branch from request
             Git git = cloneRepository(repositoryURL, branch, token);
+            git.checkout().setCreateBranch(true).setName("new-branch").setStartPoint(commitSHA).call();
             System.out.println("CLONE SUCCESS, starting build, this may take a while...");
             // notify GitHub
             createCommitStatus(repositoryFullName, commitSHA, "pending", token, "compiling repo on server...");
@@ -519,14 +520,13 @@ public class App extends AbstractHandler {
      * @return A JSONObject representing the parsed string, or an empty JSONObject
      *         if the parsing fails
      */
-    private JSONObject parseJSON(String str) {
+    public static JSONObject parseJSON(String str) {
         try {
             JSONParser parser = new JSONParser();
             JSONObject json = (JSONObject) parser.parse(str);
             return json;
         } catch (org.json.simple.parser.ParseException e) {
             System.err.println("[ERROR] In parseJSON(String): Failed parsing Json from string");
-            e.printStackTrace();
             return new JSONObject();
         }
     }
@@ -696,3 +696,4 @@ public class App extends AbstractHandler {
         }
     }
 }
+
