@@ -100,7 +100,7 @@ public class AppTest {
     }
 
     @Test
-    public void successfullWebhookReqquest() {
+    public void validWebhookReqquest() {
         int PORT = 8181;
         Thread server = new Thread(() -> startTempServer(PORT));
         try {
@@ -121,6 +121,34 @@ public class AppTest {
 
             HttpResponse<String> response = a.join();
             assertEquals(200, response.statusCode());
+        } catch (Exception e) {
+            Assert.fail("Test threw an exception and could not complete");
+        }
+
+    }
+
+    @Test
+    public void invalidWebhookRequest() {
+        int PORT = 8182;
+        Thread server = new Thread(() -> startTempServer(PORT));
+        try {
+            server.start();
+
+            String path = samplePath + "invalidrequest.json";
+            File file = new File(path);
+            path = file.getAbsolutePath();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://localhost:" + String.valueOf(PORT) + "/ci/"))
+                    .header("Content-Type", "application/json")
+                    .POST(BodyPublishers.ofFile(Paths.get(path)))
+                    .build();
+
+            HttpClient client = HttpClient.newHttpClient();
+            CompletableFuture<HttpResponse<String>> a = client.sendAsync(request, BodyHandlers.ofString());
+
+            HttpResponse<String> response = a.join();
+            assertEquals(400, response.statusCode());
         } catch (Exception e) {
             Assert.fail("Test threw an exception and could not complete");
         }
